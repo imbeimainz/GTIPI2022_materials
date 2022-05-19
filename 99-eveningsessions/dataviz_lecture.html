@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Data Visualization 101 - Designing Scientific Figures</title>
+    <meta charset="utf-8" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+    <script src="libs/xaringanExtra-webcam/webcam.js"></script>
+    <script id="xaringanExtra-webcam-options" type="application/json">{"width":"200","height":"200","margin":"1em"}</script>
+    <script src="libs/fabric/fabric.min.js"></script>
+    <script src="libs/FileSaver/FileSaver.min.js"></script>
+    <script src="libs/jQuery/jquery-3.5.1.min.js"></script>
+    <link rel="stylesheet" href="css/FMstyles.css" type="text/css" />
+    <link rel="stylesheet" href="css/animate.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, title-slide
+
+.title[
+# Data Visualization 101 - Designing Scientific Figures
+]
+.author[
+### Federico Marini (<a href="mailto:marinif@uni-mainz.de" class="email">marinif@uni-mainz.de</a>)</br>
+<p align="center">
+<a href="https://imbeimainz.github.io/GTIPI2022"><img src="images/gtipi_logo.png" alt="" height="150"/></a>
+</p>
+]
+.date[
+### <p>2022/06/02</br> <a href="https://twitter.com/FedeBioinfo"><code>&lt;svg viewBox="0 0 512 512" style="height:1em;position:relative;display:inline-block;top:.1em;" xmlns="http://www.w3.org/2000/svg"&gt;  &lt;path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"&gt;&lt;/path&gt;&lt;/svg&gt; @FedeBioinfo</code></a></p>
+]
+
+---
+
+
+layout: true
+
+
+
+
+
+---
+
+# Goals
+
+- understand what the purposes of data visualizations are
+- start to think visually, for obtaining intuitive plots for scientific presentations and publications
+- learn dos and donts of plotting
+
+### Prerequisites
+
+- some familiarity with data, in general
+
+--
+
+## Practical session? (not today)
+
+**Aims:**
+
+- familiarize with plotting in R using base graphics and ggplot2, to rapidly and flexibly explore datasets by visualization
+- learn how to visualize data along 1, 2, or more dimensions
+- learn some options about interactive visualizations
+- required: basic understanding of R
+
+---
+
+# What's data visualization?
+
+--
+
+**Data visualization** is...
+
+--
+
+part **art** and part **science**. 
+
+**Challenge**: get the art right without getting the science wrong (and vice versa) 
+
+--
+
+- A data visualization first and foremost has to **accurately convey the data** - It must not mislead or distort. 
+- A data visualization should be **aesthetically pleasing**. Good visual presentations tend to enhance the message of the visualization. 
+
+--
+
+Whenever we visualize data, we take data values and convert them in a systematic and logical way into the visual elements that make up the final graphic. 
+
+All data visualizations map data values into quantifiable features of the resulting graphic (_aesthetics_).
+
+You'll have to be scientist *and* designer!
+
+---
+
+# Why visualization?
+
+&lt;!-- Data visualisation generally communicates information much quicker than numerical tables. --&gt;
+&lt;!-- Data visualisation can also reveal unexpected structures in data; it is not surprising that data visualisation is one of the key tools in exploratory data analysis. --&gt;
+&lt;!-- Data plot is usually more eye-catching even if you lose accuracy of the information. --&gt;
+
+We want to...
+
+--
+
+- communicate
+- deliver summaries
+- display patterns
+  - in a compact way
+  - in a meaningful way
+  
+--
+
+Is visualization that important?
+
+--
+
+.huge[Yes.]
+
+--
+
+Think of what you look first in a paper.  
+BTW: what do you look first in a paper?
+
+--
+
+And yet, we will just be scratching the surface!
+
+---
+
+# Got a nice viz?
+
+Think of/search/link/describe a nice visualization example you encountered, and let's start a discussion together
+
+--&gt; Post the link in the chat and we can discuss about it in the discussion
+---
+
+# There is no "one plot to seize them all"
+
+Key for any data visualization: make sure that it is appropriate to your data type (e.g. discrete vs continuous), and fits your purpose, i.e. what you are trying to communicate!
+
+
+Looking for inspiration?
+You can visit the R Graph Gallery, a fantastic resource for ggplot2 code and inspiration! 
+
+https://www.r-graph-gallery.com/
+
+---
+
+# Visualizations
+
+A compendium - and some kind of lexicon as well
+
+Following the beautiful https://clauswilke.com/dataviz/ book
+
+---
+
+# Talking about color first
+
+--
+
+![](images/qualitative-scales-1.png)
+
+--
+
+**Qualitative scale**: distinguish things
+
+---
+
+# Talking about color first
+
+![](images/sequential-scales-1.png)    
+
+--
+
+**Sequential scale**: Representing data values
+
+---
+
+# Talking about color first
+
+![](images/diverging-scales-1.png)
+
+--
+
+**Sequential scale, diverging**: midpoint matters.
+
+Can you name an example for a meaningful midpoint?
+
+--
+
+Who of you has seen a heatmap for microarrays? Why are many bad?
+
+---
+
+# Visualizations - Amounts
+
+--
+
+![](images/amounts-1.png)
+
+We are interested in the magnitude of some set of numbers
+
+---
+
+# Visualizations - Amounts
+
+![](images/amounts_multi-1.png)
+
+--
+
+We are interested in the magnitude of some set of numbers, **varying according to two categorical variables**
+
+---
+
+# Visualizations - Distributions
+
+![](images/single-distributions-1.png)
+
+--
+
+We would like to understand how a particular variable is distributed in a dataset
+
+---
+
+# Visualizations - Distributions
+
+![](images/multiple-distributions-1.png)
+--
+
+With multiple distributions we would like to visualize simultaneously...
+
+---
+
+# Visualizations - Proportions
+
+![](images/proportions-1.png)
+
+--
+
+We want to show how some group, entity, or amount breaks down into individual pieces that each represent a proportion of the whole
+
+Disclaimer: yes, I do hate pie charts
+
+---
+
+# Visualizations - Proportions
+
+
+![](images/proportions-comp-1.png)
+
+--
+
+When visualizing multiple sets of proportions or changes in proportions across conditions
+
+---
+
+# Visualizations - Proportions
+
+![](images/proportions-multi-1.png)
+
+--
+
+When proportions are specified according to multiple grouping variables
+
+---
+
+# Visualizations - Associations
+
+
+![](images/basic-scatter-1.png)
+
+--
+
+When we want to show one quantitative variable relative to another 
+
+---
+
+# Visualizations - Associations
+
+![](images/xy-binning-1.png)
+
+--
+
+With large number of points...
+
+---
+
+# Visualizations - Associations
+
+![](images/xy-lines-1.png)
+
+--
+
+When the time component comes somehow into play...
+
+---
+
+# Visualizations - Uncertainty
+
+![](images/errorbars-1.png)
+
+--
+
+Error bars are meant to indicate the range of likely values for some estimate or measurement
+
+---
+
+# Visualizations - Uncertainty
+
+![](images/confidence-dists-1.png)
+
+--
+
+Some more detailed representations
+
+---
+
+# Visualizations - Uncertainty
+
+
+![](images/confidence-bands-1.png)
+
+Some more detailed representations
+
+---
+
+# A primary principle - show me your data!
+
+--
+
+FOR REAL.
+
+--
+
+&lt;p align="center"&gt;
+&lt;img src="images/dynamite-1.png" alt="" height="400"/&gt;
+&lt;/p&gt;
+
+--
+
+This is what is also called "dynamite plot". Can you name why these are bad?
+
+--
+
+Can you tell me why people keep on using them? How can we improve this?
+
+---
+
+# A primary principle - show me your data!
+
+FOR REAL.
+
+![](images/dynamite-scatter.jpg)
+
+---
+
+# A primary principle - show me your data!
+
+FOR REAL.
+
+![](images/boxplot-dots.jpg)
+
+Check out Statistical relevance—relevant statistics, part I &amp; part II by Bernd Klaus
+
+https://simplystatistics.org/2019/02/21/dynamite-plots-must-die/
+
+---
+
+# Is this a good plot?
+
+&lt;p align="center"&gt;
+&lt;img src="images/ss_goodone.png" alt="" height="500"/&gt;
+&lt;/p&gt;
+
+---
+
+# Some other principles 
+
+**Proportional ink**
+
+--
+
+The sizes of shaded areas in a visualization need to be proportional to the data values they represent
+
+--
+
+**Handling overlapping points**
+
+--
+
+Partial transparency and jittering; or using small multiples/faceting
+
+--
+
+**Color might be bad**
+
+--
+
+... when it is too much, poorly chosen (rainbow for quantities anyone?), or not accounting for vision deficiency (check out the work of Okabe and Ito!)
+
+--
+
+**Compound figures**
+
+--
+
+Do not confound the reader! Use consistent encoding, match orderings e.g. in plots AND legend
+
+---
+
+# Some other principles 
+
+**Titles, captions, and tables**
+
+--
+
+Just. Provide. Appropriate. Context. 
+
+Often readers just skim through your paper.
+
+--
+
+**Don’t go 3D**
+
+--
+
+Just don't. When gratuitous, just do not do it. Well, unless you are representing something which _is_ 3-dimensional (topographic reliefs, or protein structures)
+
+---
+
+# Got a nice viz?
+
+Let's try to dissect that
+
+
+
+---
+
+# Let's create some visualizations
+
+&lt;!-- TODO: using fabricerin to draw in the slides?! --&gt;
+
+
+<input id = erasebad_good type = 'checkbox' title='Check it to erase !'>
+
+<input id = bad_gooddrawing-color type = 'color' value = '#005E7A' style = 'width:30px;'>
+
+<input id = exportbad_good type = 'button' style = 'width:55px;' value = 'Export'>
+
+<canvas id="bad_good" width="1000" height="700"></canvas>
+<script>
+const bad_good = new fabric.Canvas('bad_good', {
+    backgroundColor: '#FFFFFF',
+    isDrawingMode: true
+
+    });
+
+
+bad_good.freeDrawingBrush.width  = 2;
+
+
+bad_gooddrawingColorEl = document.getElementById('bad_gooddrawing-color');
+
+bad_good.freeDrawingBrush.color = bad_gooddrawingColorEl.value;
+
+bad_gooddrawingColorEl.onchange = function() {
+    bad_good.freeDrawingBrush.color = bad_gooddrawingColorEl.value;
+  };
+
+
+ $('#erasebad_good').click(function(){
+
+    if (this.checked) {
+
+      bad_good.freeDrawingBrush.color  = '#FFFFFF';
+
+    } else {
+
+      bad_good.freeDrawingBrush.color = bad_gooddrawingColorEl.value;
+
+    }
+
+
+
+});
+
+
+
+
+
+ $('#erasebad_good').click(function(){
+
+    if (this.checked) {
+
+      bad_good.freeDrawingBrush.width   = 10;
+
+    } else {
+
+      bad_good.freeDrawingBrush.width  = 2;
+
+    }
+
+
+});
+
+
+$('#exportbad_good').click(function(){
+
+  $('#bad_good').get(0).toBlob(function(blob){
+
+    saveAs(blob, 'bad_good-IMG.png');
+
+
+  });
+
+
+});
+
+
+
+
+
+
+</script>
+
+---
+
+# An appetizer for RNA-seq?
+
+...or many other high-dimensional data
+
+* MA plot
+* volcano plot
+* heatmaps
+* PCA plot
+* t-SNE/UMAP plot
+* other genomic data (karyoplots, ...)
+
+---
+
+# An appetizer for RNA-seq?
+
+&lt;img src="dataviz_lecture_files/figure-html/unnamed-chunk-3-1.png" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# A helpful checklist
+
+* **Appropriate plot type for results** - Might be a boxplot, a scatterplot, a linear regression fit ... many options
+
+--
+
+* **Plot is well organised** -	The independent (explanatory) variable is on the x and the dependent (response) variable is on the y axis
+
+--
+
+* **X and Y axes use correct units** - Having proper symbols (for alpha, beta, etc.) and super/subscript where needed
+
+--
+
+* **X and Y axes easy to read** - Beware awkward fonts and tiny letters
+
+--
+
+* **Clear informative legend** - It's easy to tell apart what points/lines on the graph represent
+
+---
+
+# A helpful checklist
+
+* **Plot is not cluttered** - Don't put all results on one plot, give them space to shine
+
+--
+
+* **Clear and consistent colour scheme** - Stick with the same colours for the same variables, avoid red/green combinations which might look the same to colourblind people
+
+--
+
+* **Plot in the right dimensions** - Avoid overlapping labels and points/lines which merge together and make your graph longer/wider if needed
+
+--
+
+* **Measures of uncertainty where appropriate** - Error bars, confidence and credible intervals, remember to say in the caption what they are
+
+--
+
+* **Concise and informative caption** - Remember to include what the data points show (raw data? Model predictions?), what is the sample size for each treatment, the effect size and what measure of uncertainty accompanies it
+
+&lt;!-- --- --&gt;
+
+&lt;!-- # Choosing the right visualization software --&gt;
+
+&lt;!-- Reproducibility and repeatability --&gt;
+&lt;!-- Data exploration versus data presentation --&gt;
+&lt;!-- Separation of content and design --&gt;
+
+&lt;!-- --- --&gt;
+
+&lt;!-- # Telling a story and making a point --&gt;
+
+&lt;!-- Most data visualization is done for the purpose of communication. We have an insight about a dataset, and we have a potential audience, and we would like to convey our insight to our audience. To communicate our insight successfully, we will have to present the audience with a clear and exciting story. The need for a story may seem disturbing to scientists and engineers, who may equate it with making things up, putting a spin on things, or overselling results. However, this perspective misses the important role that stories play in reasoning and memory. --&gt;
+
+&lt;!-- What is a story? --&gt;
+
+&lt;!-- Before we can discuss strategies for turning visualizations into stories, we need to understand what a story actually is. A story is a set of observations, facts, or events, true or invented, that are presented in a specific order such that they create an emotional reaction in the audience. The emotional reaction is created through the build-up of tension at the beginning of the story followed by some type of resolution towards the end of the story. We refer to the flow from tension to resolution also as the story arc, and every good story has a clear, identifiable arc. --&gt;
+
+&lt;!-- Never assume your audience can rapidly process complex visual displays.  --&gt;
+
+&lt;!-- do everything we can to help our readers understand the meaning of our visualizations and see the same patterns in the data that we see. This usually means less is more. Simplify your figures as much as possible. --&gt;
+
+
+---
+
+# Summary
+
+**Visualizing data** is one of the most important activities in applied statistics &amp; in science. 
+
+--
+
+There is a large number of **good (and bad) practices** -&gt; you can quickly see whether a certain graphic is effective in conveying its message
+
+--
+
+Important **options**: 
+
+- plot type (what is called a geom in `ggplot2`)
+- proportions (incl. aspect ratios) 
+- colors. 
+
+--
+
+The **grammar of graphics** is a powerful set of concepts to reason about graphics and to communicate our intentions for a data visualization to a computer.
+
+--
+
+Creating your own visualizations is in many ways like good writing. It is extremely important, but **there is no simple recipe** for it. 
+
+--
+
+**Look carefully** at lots of visualizations made by others &amp; experiment with making your own visualizations to learn the ropes.
+
+--
+
+*Yes, we just scratched the surface!* Data viz is a scientific discipline in its own
+
+---
+
+# Resources
+
+Some of these are full books, some of them are even fully free and available online; all are accessible and very useful!
+
+- https://rstudio.com/resources/cheatsheets/
+- Claus Wilke's book https://clauswilke.com/dataviz/
+- Tamara Munzner's work
+- Huber &amp; Holmes: https://www.huber.embl.de/msmb/Chap-Graphics.html
+- all the links from https://clauswilke.com/dataviz/bibliography.html
+- Statistical relevance—relevant statistics, part I &amp; part II (Klaus, EMBO Journal)
+
+---
+
+class: center, middle
+
+## ... thank you for your attention!
+&lt;code&gt;marinif@uni-mainz.de&lt;/code&gt; - &lt;svg viewBox="0 0 512 512" style="height:1em;position:relative;display:inline-block;top:.1em;" xmlns="http://www.w3.org/2000/svg"&gt;  &lt;path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"&gt;&lt;/path&gt;&lt;/svg&gt; [`@FedeBioinfo`](https://twitter.com/FedeBioinfo)
+
+---
+
+&lt;!-- empty slide --&gt;
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="https://platform.twitter.com/widgets.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
