@@ -4,7 +4,7 @@ title: "Data Visualization 101 - Designing Scientific Figures"
 author: > 
   Federico Marini (marinif@uni-mainz.de)</br>
   <p align="center">
-  <img src="images/gtipi_logo.png" alt="" height="150"/>
+  <a href="https://imbeimainz.github.io/GTIPI2022"><img src="images/gtipi_logo.png" alt="" height="150"/></a>
   </p>
 date: >
   2022/06/02</br>

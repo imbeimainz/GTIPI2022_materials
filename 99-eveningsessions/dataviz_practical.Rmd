@@ -1,0 +1,503 @@
+---
+title: >
+  Data viz - hands-on session
+subtitle: >
+  GTIPI SummerSchool
+  <p align="center">
+  <a href="https://imbeimainz.github.io/GTIPI2022"><img src="images/gtipi_logo.png" alt="" height="150"/></a>
+  </p>
+author:
+- name: <a href="https://federicomarini.github.io">Federico Marini (marinif@uni-mainz.de)</a><br><a href="https://www.unimedizin-mainz.de/imbei/">IMBEI, University Medical Center Mainz</a><br><a href="https://twitter.com/FedeBioinfo">`r icons::fontawesome('twitter')` `@FedeBioinfo`</a>
+date: "2022/06/02"
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    theme: cosmo
+    code_folding: show
+    code_download: true
+editor_options: 
+  chunk_output_type: console
+
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#",
+  error = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+
+
+# Back to the base - `plot`
+
+We're going to use the `DNase` dataset, included in R's distribution
+
+You might want to read up a little on it, so type `help(DNase)` to do so - yes, nice datasets SHOULD be documented
+
+```{r}
+head(DNase)
+plot(DNase$conc, DNase$density)
+```
+
+---
+
+# Back to the base - `plot`
+
+Customizing this a little...
+
+E.g. color the dots in blue, and add vertical lines for each value of concentration
+
+<details>
+
+```{r}
+plot(DNase$conc, DNase$density,
+  ylab = attr(DNase, "labels")$y,
+  xlab = paste(attr(DNase, "labels")$x, attr(DNase, "units")$x),
+  pch = 3,
+  col = "blue")
+abline(v = unique(DNase$conc), lty = "dotted")
+```
+
+</details>
+
+---
+
+# Back to the base - `plot`
+
+Color the points by their value in the Run column
+
+<details>
+
+```{r}
+plot(DNase$con, DNase$density, col = DNase$Run)
+```
+
+</details>
+
+
+
+---
+
+# Back to the base - `plot`
+
+What if you need to check the distribution of a variable?
+
+What if you wanted a boxplot?
+
+Can you check out how to split the boxplots by their Run?
+
+<details>
+
+```{r, fig.width=10, fig.height=5}
+par(mfrow = c(1, 2))
+hist(DNase$density) 
+boxplot(density ~ Run, DNase)
+```
+
+</details>
+
+---
+
+# What's "wrong" with this?
+
+While it is effective to quickly produce out of the box figures...
+
+- there is not global overview and parameterization of the visualization
+- the layout decisions have to be made up upfront
+- every aspect of the figure is customised locally as function arguments (one could argue that this is a plus)
+- there is no unified type of data across all functions which makes it efficient for some types of data (if they match), but also very heterogeneous in terms of interface - base graphics functions will work with various inputs: a data.frame, vectors, a formula,...
+- defaults (colours in particular!) are poorly chosen
+
+We'll soon use a visualization framework called the *grammar of graphics* (as in `ggplot2`) - enabling step by step construction of high quality graphics in a logical and elegant manner. 
+
+But first: hi-dim data time!
+
+---
+
+# `Hiiragi2013`
+
+A gene expression microarray dataset that reports the transcriptomes of around 100 individual cells from mouse embryos at different time points in early development
+
+```{r}
+library("Hiiragi2013")
+data("x")
+dim(Biobase::exprs(x))
+
+head(pData(x), n = 2)
+```
+
+We'll do some wrangling on that soon, so let's create 
+
+```{r}
+dftx <- data.frame(t(Biobase::exprs(x)), pData(x))
+```
+
+---
+
+# `ggplot2`: the grammar of graphics
+
+The components of `ggplot2`'s grammar of graphics are
+
+1. one or more datasets,
+1. one or more geometric objects that serve as the visual representations of the data, – for instance, points, lines, rectangles, contours,
+1. descriptions of how the variables in the data are mapped to visual properties (aesthetics) of the geometric objects, and an associated scale (e. g., linear, logarithmic, rank),
+1. one or more coordinate systems,
+1. statistical summarization rules,
+1. a facet specification, i.e. the use of multiple similar subplots to look at subsets of the same data,
+1. optional parameters that affect the layout and rendering, such text size, font and alignment, legend positions.
+
+Simple form:
+
+```
+ggplot(data = <DATA>, mapping = aes(<MAPPINGS>)) +  <GEOM_FUNCTION>()
+```
+
+---
+
+# Advantages of the `ggplot2` framework
+
+- The ease of getting a good looking plot
+- Easy customization
+- A lot of necessary data processing is done for you
+- Clear syntax
+- Easy multidimensional approach
+- Decent default color scheme as a default
+- Lots of extensions
+
+---
+
+# Re-doing the DNase plot...
+
+Exercise: create a similar plot of DNase density vs concentration, like we just did for base graphics.
+
+<details>
+
+```{r}
+library("ggplot2")
+ggplot()
+ggplot(data = DNase)
+ggplot(data = DNase,
+       mapping = aes(x = conc, y = density))
+
+ggplot(data = DNase,
+       mapping = aes(x = conc, y = density)) + 
+  geom_point()
+p <- ggplot(data = DNase,
+            mapping = aes(x = conc, y = density)) + 
+  geom_point()
+p
+p + geom_point(aes(color = Run))
+p + geom_point(aes(color = as.character(Run)))
+# ggsave("DNAse-histogram-demo.pdf", plot = p) # check out the docs for this!
+```
+
+</details>
+
+Which one is your favorite? Why?
+
+<!-- define a mapping (using the aesthetic (aes) function), by selecting the variables to be plotted and specifying how to present them in the graph, e.g. as x/y positions or characteristics such as size, shape, colour, etc. -->
+
+---
+
+# Exploring `Hiiragi2013`
+
+What are we doing here?
+
+```{r eval=FALSE}
+ggplot(dftx, aes(x = X1426642_at, y = X1418765_at)) +
+  geom_point(shape = 1) +
+  geom_smooth(method = "loess")
+```
+
+--
+
+and here?
+
+```{r eval=FALSE}
+ggplot(dftx, aes(x = X1426642_at, y = X1418765_at))  +
+  geom_point(aes(color = sampleColour), shape = 19) +
+  geom_smooth(method = "loess") +
+  scale_color_discrete()
+```
+
+---
+
+# Visualizing 1D data
+
+A common task in biological data analysis is the comparison between several samples of univariate measurements. In this section we’ll explore some possibilities for visualizing and comparing such samples. As an example, we’ll use the intensities of a set of four genes: Fgf4, Gata4, Gata6 and Sox2
+
+```{r}
+selectedProbes = c(Fgf4 = "1420085_at", Gata4 = "1418863_at",
+                   Gata6 = "1425463_at", Sox2 = "1416967_at")
+library("dplyr")
+library("tidyr")
+tmp <- data.frame(t(exprs(x[selectedProbes, ])))
+names(tmp) <- names(selectedProbes)
+tmp$sample <- rownames(tmp)
+head(tmp)
+genes <- gather(tmp, key = "gene", value = "expression", -sample)
+head(genes)
+```
+
+This `genes` data.frame is in the so-called tidy format!  
+`ggplot2` LOVES tidy data
+
+---
+
+# 1D: barplots, boxplots, dot, jitter, violins
+
+```{r}
+ggplot(genes, aes(x = gene, y = expression)) +
+  stat_summary(fun = mean, geom = "bar")
+```
+
+Out of the following representations, let's discuss which one you prefer most/least
+
+```{r}
+p <- ggplot(genes, aes( x = gene, y = expression, fill = gene))
+p + geom_boxplot()
+```
+
+Try now some more options on this object `p`. Try to add jittered points, or use a violin plot
+
+<details>
+
+```{r}
+p + geom_jitter(aes(colour = gene))
+p + geom_violin()
+p + geom_dotplot(binaxis = "y", binwidth = 1/6,
+       stackdir = "center", stackratio = 0.75,
+       aes(color = gene))
+library("ggbeeswarm")
+p + geom_beeswarm(aes(color = gene))
+library("ggforce")
+p + geom_sina(aes(color = gene))
+```
+
+</details>
+
+You can even stack multiple `geom_`s on another!
+
+# 1D: densities, histograms
+
+```{r}
+genes %>%
+  filter(gene == "Gata4") %>%
+  ggplot(aes(x = expression)) + geom_histogram()
+```
+
+```{r}
+ggplot(genes, aes(x = expression, color = gene)) + 
+  geom_density()
+
+ggplot(genes, aes(x = expression, color = gene)) + 
+  geom_density() + 
+  theme_bw()
+
+```
+
+There are soooo many themes available - I like clean ones, but often it depends on your purpose!
+
+---
+
+# Visualizing 2D data
+
+```{r}
+dfx <- as.data.frame(Biobase::exprs(x))
+scp <- ggplot(dfx, aes(x= `59 E4.5 (PE)`, 
+                       y = `92 E4.5 (FGF4-KO)`))
+scp + geom_point()
+```
+
+
+Can you think of a way to reduce the overplotting here?
+
+<details>
+
+```{r}
+scp + geom_point(alpha = 0.3)
+scp + geom_density2d(h = 0.5, bins = 60)
+scp + geom_hex() + coord_fixed()
+```
+
+</details>
+
+---
+
+# Visualizing data along more dimensions
+
+When visualising data along additional dimension, we can parameterize the points by setting their shape, colour, size and transparency, that can be set with point aesthetics such as fill, color (or colour), shape, size and alpha.
+
+A very powerful way to represent data along additional dimensions is facetting, i.e. producing sub-plots for different subsets of the data. Below, we first re-annotate the data using some regular expressions
+
+```{r}
+ggplot(dftx, aes(x = X1426642_at, y = X1418765_at, colour = lineage)) +
+  geom_point()
+ggplot(dftx, aes(x = X1426642_at, y = X1418765_at)) +
+  geom_point() +
+  facet_grid( . ~ lineage )
+```
+
+```{r}
+ggplot(dftx,
+       aes(x = X1426642_at, y = X1418765_at)) +
+  geom_point() +
+  facet_grid( Embryonic.day ~ lineage )
+```
+
+Your turn: Use facets to visualise the distribution of the four Fgf4, Gata4, Gata6 and Sox2 genes in the `genes` data using histograms.
+
+<details>
+
+```{r}
+ggplot(genes, aes(x = expression)) +
+  geom_histogram() +
+  facet_wrap(~ gene)
+```
+
+</details>
+
+---
+
+# Interactive visualizations
+
+```{r}
+p2 <- p + geom_jitter(aes(colour = gene))
+library("plotly")
+ggplotly(p2)
+```
+
+Sometimes this is all you might need!
+
+---
+
+# An appetizer for RNA-seq?
+
+...or many other high-dimensional data
+
+* MA plot
+* volcano plot
+* heatmaps
+* PCA plot
+* tSNE plot
+* other genomic data (karyoplots, ...)
+
+What do these plots do? Let's discuss together.
+
+---
+
+# An appetizer for RNA-seq?
+
+```{r}
+library("pheatmap")
+library("dplyr")
+groups <- group_by(pData(x), sampleGroup) %>%
+  summarise(n = n(), color = unique(sampleColour))
+groupColor <- setNames(groups$color, groups$sampleGroup)
+topGenes <- order(rowVars(Biobase::exprs(x)), decreasing = TRUE)[1:500]
+rowCenter <- function(x) { x - rowMeans(x) }
+pheatmap( rowCenter(Biobase::exprs(x)[ topGenes, ] ),
+  show_rownames = FALSE, show_colnames = FALSE,
+  breaks = seq(-5, +5, length = 101),
+  annotation_col =
+    pData(x)[, c("sampleGroup", "genotype", "Embryonic.day", "ScanDate") ],
+  annotation_colors = list(
+    sampleGroup = groupColor,
+    genotype = c(`FGF4-KO` = "chocolate1", `WT` = "azure2"),
+    Embryonic.day = setNames(brewer.pal(9, "Blues")[c(3, 6, 9)],
+                             c("E3.25", "E3.5", "E4.5")),
+    ScanDate = setNames(brewer.pal(nlevels(x$ScanDate), "YlGn"),
+                        levels(x$ScanDate))
+  ),
+  cutree_rows = 4
+)
+```
+
+
+---
+
+# Got a nice viz?
+
+Let's try to dissect that
+
+
+---
+
+# A checklist
+
+1. Appropriate plot type for results - Might be a boxplot, a scatterplot, a linear regression fit ... many options
+2. Plot is well organised -	The independent (explanatory) variable is on the x and the dependent (respnse) variable is on the y axis
+3. X and Y axes use correct units - Having proper symbols (for alpha, beta, etc.) and super/subscript where needed
+4. X and Y axes easy to read - Beware awkward fonts and tiny letters
+5. Clear informative legend - It's easy to tell apart what points/lines on the graph represent
+6. Plot is not cluttered - Don't put all results on one plot, give them space to shine
+7. Clear and consistent colour scheme - Stick with the same colours for the same variables, avoid red/green combinations which might look the same to colourblind people
+8. Plot is the right dimensions - Avoid overlapping labels and points/lines which merge together and make your graph longer/wider if needed
+9. Measures of uncertainty where appropriate - Error bars, confidence and credible intervals, remember to say in the caption what they are
+10. Concise and informative caption - Remember to include what the data points show (raw data? Model predictions?), what is the sample size for each treatment, the effect size and what measure of uncertainty accompanies it
+
+<!-- --- -->
+
+<!-- # Choosing the right visualization software -->
+
+<!-- Reproducibility and repeatability -->
+<!-- Data exploration versus data presentation -->
+<!-- Separation of content and design -->
+
+<!-- --- -->
+
+<!-- # Telling a story and making a point -->
+
+<!-- Most data visualization is done for the purpose of communication. We have an insight about a dataset, and we have a potential audience, and we would like to convey our insight to our audience. To communicate our insight successfully, we will have to present the audience with a clear and exciting story. The need for a story may seem disturbing to scientists and engineers, who may equate it with making things up, putting a spin on things, or overselling results. However, this perspective misses the important role that stories play in reasoning and memory. -->
+
+<!-- What is a story? -->
+
+<!-- Before we can discuss strategies for turning visualizations into stories, we need to understand what a story actually is. A story is a set of observations, facts, or events, true or invented, that are presented in a specific order such that they create an emotional reaction in the audience. The emotional reaction is created through the build-up of tension at the beginning of the story followed by some type of resolution towards the end of the story. We refer to the flow from tension to resolution also as the story arc, and every good story has a clear, identifiable arc. -->
+
+<!-- Never assume your audience can rapidly process complex visual displays.  -->
+
+<!-- do everything we can to help our readers understand the meaning of our visualizations and see the same patterns in the data that we see. This usually means less is more. Simplify your figures as much as possible. -->
+
+
+---
+
+# Summary
+
+Visualizing data is one of the most important activities in applied statistics & in science. 
+
+There is a large number of good (and bad) practices -> you can quickly see whether a certain graphic is effective in conveying its message
+
+Important options: 
+
+- plot type (what is called a geom in ggplot2)
+- proportions (incl. aspect ratios) 
+- colors. 
+
+The grammar of graphics is a powerful set of concepts to reason about graphics and to communicate our intentions for a data visualization to a computer.
+
+Creating your own visualizations is in many ways like good writing. It is extremely important, but there is no simple recipe for it. 
+
+Look carefully at lots of visualizations made by others & experiment with making your own visualizations to learn the ropes
+
+*Yes, we just scratched the surface!* Data viz is a scientific discipline in its own
+
+---
+
+# Session information {-}
+
+We report the version numbers of R and all the packages used in this session. 
+
+Why?
+
+It is good practice to always keep such a record of this!
+By including this at the bottom of a script, your reports will become more reproducible.
+
+```{r}
+sessionInfo()
+```
+
