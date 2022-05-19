@@ -1,0 +1,32 @@
+---
+title: >
+  Experimental Design and Principles of Differential Expression Analysis - hands-on session
+subtitle: >
+  GTIPI SummerSchool
+  <p align="center">
+  <a href="https://imbeimainz.github.io/GTIPI2022"><img src="images/gtipi_logo.png" alt="" height="150"/></a>
+  </p>
+author:
+- name: <a href="https://csoneson.github.io">Charlotte Soneson (charlotte.soneson@fmi.ch)</a><br><a href="https://www.fmi.ch/bioinformatics/">FMI Basel</a><br><a href="https://twitter.com/CSoneson">`r icons::fontawesome('twitter')` `@CSoneson`</a>
+date: "2022/06/01"
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    theme: cosmo
+    code_folding: show
+    code_download: true
+editor_options: 
+  chunk_output_type: console
+
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#",
+  error = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+```
