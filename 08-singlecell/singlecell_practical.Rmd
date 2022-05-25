@@ -338,7 +338,7 @@ curve(metadata(dec.pois)$trend(x), col = "dodgerblue", add = TRUE)
 ```
 
 In each case, the biological variance of a gene can be estimated as the 
-difference between the total variance and the modelled technical variance. 
+difference between the total variance and the modeled technical variance. 
 This value can be used to rank the genes, and to select a set of "highly 
 variable" genes to use as the basis of further downstream analysis. Here, we 
 select the top 1,000 genes based on the trend fit, and add these to the 
@@ -396,7 +396,7 @@ are placed close to each other, longer distances in the representation
 risky to draw conclusions of "similarity" or "dissimilarity" from the positional
 relationships of different cell groupings that appear in a tSNE plot. In addition, 
 the stochastic nature of tSNE means that every time the algorithm is applied a 
-different representation will be produced *unlesss a random seed is set*. 
+different representation will be produced *unless a random seed is set*. 
 
 ```{r}
 set.seed(123)
@@ -683,7 +683,7 @@ cluster.
 
 While `pval.type = "all"` will, as just illustrated, allow us to detect marker
 genes that are specific to a given cluster, there are important pitfalls to be
-aware of. In order to illustrate one of these, we artifically split the cells in
+aware of. In order to illustrate one of these, we artificially split the cells in
 cluster 2 into two clusters (call one of the groups "2b"), and redo the test to
 find genes that are upregulated in cluster 2 compared to _all_ other clusters.
 
