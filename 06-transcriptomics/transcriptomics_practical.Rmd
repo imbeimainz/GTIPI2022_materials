@@ -32,9 +32,9 @@ knitr::opts_chunk$set(
 )
 ```
 
-<script type="text/javascript"
-  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-</script>
+<!-- <script type="text/javascript" -->
+<!--   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"> -->
+<!-- </script> -->
 
 
 ```{r style, echo=FALSE, message=FALSE, warning=FALSE, results="asis"}
@@ -107,6 +107,8 @@ dir <- system.file("extdata", package = "macrophage")
 list.files(dir)
 ```
 
+TODO: open up that directory to "better see what is in it"? Idea: it can give them a sense for the *what do I expect to get there?*
+
 # Reading the metadata
 
 First, we will read the metadata for the experiment. The main annotations of 
@@ -171,6 +173,8 @@ suppressPackageStartupMessages({
 
 ## Import quantifications on the transcript level
 st <- tximeta(coldata = coldata, type = "salmon", dropInfReps = TRUE)
+
+st
 ```
 
 (Side note: if you run the code above in Bioc 3.13, you will likely see 
@@ -182,6 +186,8 @@ with respect to the Bioconductor release schedule, see
 information. Practically, it means that although the data was imported properly, 
 we don't have the automatically associated information about which genome the 
 data correspond to.)
+
+TODO: remove the note above, this should be safe now
 
 We see that *tximeta* has identified the transcriptome used for the 
 quantification as `GENCODE - Homo sapiens - release 29`. How did this happen?
@@ -265,6 +271,9 @@ to summarize on the gene level:
 ## Summarize quantifications on the gene level
 sg <- tximeta::summarizeToGene(st)
 sg
+
+# compare e.g. to 
+st
 ```
 
 Now we have a new `RangedSummarizedExperiment` object, with one row per gene.
@@ -377,6 +386,9 @@ We have samples from four different conditions, and six donors:
 ```{r tabcoldata}
 table(colData(sg)$condition_name)
 table(colData(sg)$line_id)
+
+# possible to use a shortcut
+table(sg$line_id)
 ```
 
 
@@ -446,7 +458,7 @@ to generate a *DGEList* from the gene-level *SummarizedExperiment* object:
 ```{r dgelist, message=FALSE}
 library(edgeR)
 
-dge <- makeDGEList(sg)
+dge <- tximeta::makeDGEList(sg)
 ## Add sample information
 stopifnot(rownames(dge$samples) == rownames(colData(sg)))
 dge$samples <- cbind(dge$samples, colData(sg))
@@ -566,8 +578,15 @@ remaining dimensions will explain less than the two that we see).
 
 ```{r plotpca, fig.width=6, fig.height=4.5}
 DESeq2::plotPCA(vsd, intgroup = "condition_name")
+
 ```
 
+Additionally, the *pcaExplorer* package has some functionality on top to explore datasets from the point of view of Principal Components - including also a functional interpretation of it with the `pca2go()` function.
+
+```{r plotpca2, fig.width=10, fig.height=8}
+library(pcaExplorer)
+pcaplot(vsd, intgroup = "condition_name", ellipse = TRUE)
+```
 
 ## MDS plot
 
@@ -598,6 +617,8 @@ we need to estimate TMM normalization factors before performing further analysis
 plotMDS(dge, top = 500, labels = NULL, 
         col = as.numeric(dge$samples$condition_name), 
         cex = 0.5, gene.selection = "common")
+
+# TODO: is the axis labeling 110% correct? it is MDS "but it says Principal Component"?
 ```
 
 
@@ -896,6 +917,22 @@ df <- as.data.frame(colData(vsd)[, c("condition_name"), drop = FALSE])
 pheatmap(mat, annotation_col = df)
 ```
 
+TODO: adding heatmap with top most variable genes - harp on the idea of variability among groups and variability among replicates
+
+```{r}
+mat <- assay(vsd)
+rownames(mat) <- rowData(vsd)$SYMBOL
+
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 30)
+
+mat <- mat[topVarGenes, ]
+mat <- mat - rowMeans(mat)
+df <- as.data.frame(colData(vsd)[, c("condition_name"), drop = FALSE])
+pheatmap(mat, annotation_col = df)
+```
+
+TODO: see the "stripes" in some genes over all the samples
+
 ## Interactive visualization with iSEE
 
 `r Biocpkg("iSEE")` is a Bioconductor package that allows interactive exploration of any data
@@ -972,7 +1009,56 @@ head(camres)
 ```
 
 
+* some plugs to clusterProfiler and or topGO
+* GeneTonicList assembly - as easy as it gets
+* Opening up GeneTonic on these object
 
+```{r}
+library("GeneTonic")
+de_symbols_IFNg_vs_naive <- deseqresult2df(res, FDR = 0.05)$symbol
+bg_ids <- rowData(dds)$SYMBOL[rowSums(counts(dds)) > 0]
+
+library("topGO")
+topgo_DE_macrophage_IFNg_vs_naive <- pcaExplorer::topGOtable(
+  DEgenes = de_symbols_IFNg_vs_naive,
+  BGgenes = bg_ids,
+  ontology = "BP",
+  mapping = "org.Hs.eg.db",
+  geneID = "symbol",
+  topTablerows = 500
+)
+
+library("clusterProfiler")
+clupro_DE_macrophage_IFNg_vs_naive <- clusterProfiler::enrichGO(
+  gene = de_symbols_IFNg_vs_naive,
+  universe = bg_ids,
+  keyType = "SYMBOL",
+  OrgDb = org.Hs.eg.db,
+  ont = "BP",
+  pAdjustMethod = "BH",
+  pvalueCutoff = 0.01,
+  qvalueCutoff = 0.05,
+  readable = FALSE
+)
+
+res_enrich_topGO <- shake_topGOtableResult(topgo_DE_macrophage_IFNg_vs_naive)
+res_enrich_clupro <- shake_enrichResult(clupro_DE_macrophage_IFNg_vs_naive)
+
+gtl_macrophage <- GeneTonicList(
+  dds = dds,
+  res_de = res,
+  res_enrich = res_enrich_clupro,
+  annotation_obj = data.frame(
+    gene_id = rowData(dds)$gene_id,
+    gene_name = rowData(dds)$SYMBOL
+  )
+)
+
+## and that is it!
+# GeneTonic(gtl = gtl_macrophage)
+```
+
+TODO: the following can become bonus content? Something to touch upon or not, depending on the time we have left/the status of the students
 
 # Differential transcript expression with swish
 
@@ -1106,11 +1192,11 @@ plot(rank(dxr[match(shared, dxr$featureID), "pvalue"]),
      xlab = "DEXSeq", ylab = "swish")
 ```
 
-# Session information
+# Session information {-}
 
 ```{r}
 sessionInfo()
 ```
 
-# References
+# References {-}
 
