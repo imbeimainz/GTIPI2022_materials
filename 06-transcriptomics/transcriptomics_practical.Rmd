@@ -19,7 +19,7 @@ output:
     code_download: true
 editor_options: 
   chunk_output_type: console
-
+bibliography: references.bib
 ---
 
 ```{r setup, include = FALSE}
@@ -31,3 +31,1086 @@ knitr::opts_chunk$set(
   message = FALSE
 )
 ```
+
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+```{r style, echo=FALSE, message=FALSE, warning=FALSE, results="asis"}
+suppressPackageStartupMessages({
+    library(BiocStyle)
+    library(knitr)
+    library(rmarkdown)
+})
+options(width = 100)
+opts_chunk$set(fig.width = 6, fig.height = 6, eval = TRUE)
+```
+
+# Introduction
+
+In this tutorial we walk through a gene-level RNA-seq differential expression
+analysis using Bioconductor packages. We start from the gene-vs-sample count
+matrix, and thus assume that the raw reads have already been quality controlled
+and that the gene expression has been quantified (either using alignment and
+counting, or by applying an alignment-free quantification tool). We perform
+exploratory data analysis (EDA) for quality assessment and to explore the
+relationship between samples, then perform differential gene expression
+analysis, and visually explore the results.
+
+Bioconductor has many packages supporting analysis of high-throughput sequence
+data, including RNA-seq. The packages that we will use in this tutorial include
+core packages maintained by the [Bioconductor core
+team](https://www.bioconductor.org/about/core-team/) for importing and
+processing raw sequencing data and loading gene annotations. We will also use
+contributed packages for statistical analysis and visualization of sequencing
+data. Through scheduled releases every 6 months, the Bioconductor project
+ensures that all the packages within a release will work together in harmony
+(hence the "conductor" metaphor). The packages used in this tutorial are loaded
+with the *library* function and can be installed by following the [Bioconductor
+package installation
+instructions](http://bioconductor.org/install/#install-bioconductor-packages).
+If you use the results from an R package in published research, you can find the
+proper citation for the software by typing `citation("pkgName")`, where you
+would substitute the name of the package for `pkgName`. Citing methods papers
+helps to support and reward the individuals who put time into open source
+software for genomic data analysis.
+
+Many parts of this tutorial are based on a published RNA-seq workflow
+available via [F1000Research](http://f1000research.com/articles/4-1070)
+[@Love2015RNASeq] and as a [Bioconductor
+package](https://www.bioconductor.org/packages/release/workflows/html/rnaseqGene.html).
+
+## Experimental data
+
+The data used in this workflow comes from an RNA-seq experiment 
+[@Alasoo2018-macrophage], in which the authors identified shared quantitative 
+trait loci (QTLs) for chromatin accessibility and gene expression in human 
+macrophages exposed to IFNgamma, Salmonella and IFNgamma plus Salmonella. 
+Processed data from a subset of 24 samples from this experiment (six female 
+donors, with four treatments each) is available via the 
+`r Biocpkg("macrophage")` R/Bioconductor package. 
+In particular, the package contains output from *Salmon* [@Patro2017Salmon], 
+as well as a metadata file. More information about how the raw data was 
+processed is available from the package 
+[vignette](http://bioconductor.org/packages/release/data/experiment/vignettes/macrophage/inst/doc/macrophage.html).
+
+We start by setting the path to the folder containing the quantifications 
+(the output folders from *Salmon*). Since these are provided with an R package,
+we will point to the `extdata` subfolder of the installed package. For a typical 
+analysis of your own data, you would point directly to a folder on your storage 
+system (i.e., not using `system.file()`).
+
+```{r listfiles}
+library(macrophage)
+dir <- system.file("extdata", package = "macrophage")
+list.files(dir)
+```
+
+# Reading the metadata
+
+First, we will read the metadata for the experiment. The main annotations of 
+interest for this tutorial are `condition_name`, which represents the 
+treatment of the sample (naive, IFN gamma, Salmonella, IFN gamma+Salmonella) and 
+`line_id`, which represents the donor ID. The 
+sample identifier is given by the `names` column, and will be used to match the 
+metadata table to the quantifications.
+
+```{r readcoldata}
+coldata <- read.csv(file.path(dir, "coldata.csv"))[, c(1, 2, 3, 5)]
+dim(coldata)
+coldata
+```
+
+In addition to the `names` column, `r Biocpkg("tximeta")`, which we will use to read the 
+quantification data, requires that `coldata` has a column named `files`, 
+pointing to the *Salmon* output (the `quant.sf` file) for the respective samples.
+
+```{r addfiles}
+coldata$files <- file.path(dir, "quants", coldata$names, "quant.sf.gz")
+head(coldata)
+all(file.exists(coldata$files))
+```
+
+Now we have everything we need, and can import the quantifications with *tximeta*.
+In this process, we will see that *tximeta* automatically identifies the 
+source and version of the transcriptome reference that was used for the 
+quantification, and adds some metadata.
+The imported data will be stored in a *SummarizedExperiment* container.
+
+# Importing quantifications into R
+
+We will 
+next read the *Salmon* quantifications provided in the `r Biocpkg("macrophage")` 
+package into R and summarize the expected counts on the gene level. 
+A simple way to import results from a variety of transcript abundance 
+estimation tools into R is provided by the `r Biocpkg("tximport")` and 
+`r Biocpkg("tximeta")` packages. Here, *tximport* reads the quantifications into a
+list of matrices, while *tximeta* instead aggregates the information into a
+*SummarizedExperiment* object, and also automatically adds additional
+annotations for the features. Both packages can return quantifications on the
+transcript level or aggregate them on the gene level. They also calculate
+average transcript lengths for each gene and each sample, which can be used as
+offsets to improve the differential expression analysis by accounting for
+differential isoform usage across samples [@Soneson2015Differential].
+
+The code below imports the *Salmon* quantifications into R using the *tximeta*
+package. Note how the transcriptome that was used for the quantification is
+automatically recognized and used to annotate the resulting data object. In
+order for this to work, *tximeta* requires that the output folder structure from
+Salmon is retained, since it reads information from the associated log files in
+addition to the quantified abundances themselves. 
+
+```{r importst}
+suppressPackageStartupMessages({
+    library(tximeta)
+    library(DESeq2)
+    library(org.Hs.eg.db)
+    library(SummarizedExperiment)
+})
+
+## Import quantifications on the transcript level
+st <- tximeta(coldata = coldata, type = "salmon", dropInfReps = TRUE)
+```
+
+(Side note: if you run the code above in Bioc 3.13, you will likely see 
+an error of the form 
+`Error in .order_seqlevels(chrom_sizes[, "chrom"]): !anyNA(m32) is not TRUE`. 
+This is due to an unfortunate timing in the update of UCSC resources 
+with respect to the Bioconductor release schedule, see
+[here](https://github.com/Bioconductor/GenomeInfoDb/issues/30) for more 
+information. Practically, it means that although the data was imported properly, 
+we don't have the automatically associated information about which genome the 
+data correspond to.)
+
+We see that *tximeta* has identified the transcriptome used for the 
+quantification as `GENCODE - Homo sapiens - release 29`. How did this happen?
+In fact, the output directory from *Salmon* contains much more information than 
+just the `quant.sf` file! (this means that it is not advisable to 
+move files out of the folder, or to share only the `quant.sf` file, since 
+the context is lost):
+
+```{r listinquants}
+list.files(file.path(dir, "quants", coldata$names[1]), recursive = TRUE)
+```
+
+In particular, the `meta_info.json` file contains a hash checksum, which is 
+derived from the set of transcripts used as reference during the quantification 
+and which lets *tximeta* identify the reference source (by comparing to a 
+table of these hash checksums for commonly used references).
+
+```{r metainfo}
+rjson::fromJSON(file = file.path(dir, "quants", coldata$names[1], 
+                                 "aux_info", "meta_info.json"))
+```
+
+Looking at the size of the *SummarizedExperiment* object (205,870 rows!) as well 
+as the row names, we see that this object contains transcript-level information.
+The assays are created by directly importing the values from the `quant.sf` 
+files and combining this information across the 24 samples:
+
+* counts - `NumReads` column
+* abundance - `TPM` column
+* length - `EffectiveLength` column
+
+We can access any of the assays via the `assay` function:
+
+```{r headst}
+head(assay(st, "counts"), 3)
+```
+
+You may have noted that `st` is in fact a *RangedSummarizedExperiment* 
+object (rather than "just" a *SummarizedExperiment* object). What does this mean?
+Let’s look at the information we have about the rows (transcripts) in the object:
+
+```{r rrst}
+rowRanges(st)
+```
+
+By knowing the source and version of the reference used for the quantification, 
+*tximeta* was able to retrieve the annotation files and decorate the object with 
+information about the transcripts, such as the chromosome and position, and the 
+corresponding gene ID. Importantly, *Salmon* did not use (or know about) any of 
+this during the quantification! It needs only the transcript sequences. 
+If we just want the annotation columns, without the ranges, we can get those 
+with the `rowData` accessor:
+
+```{r rdst}
+rowData(st)
+```
+
+Similar to the row annotations in `rowData`, the *SummarizedExperiment* 
+object contains sample annotations in the `colData` slot.
+
+```{r cdst}
+colData(st)
+```
+
+# Summarizing on the gene level
+
+As we saw, the features in the *SummarizedExperiment* object above are individual 
+transcripts, rather than genes.
+Often, however, we want to do analysis on the gene level, since the gene-level 
+abundances are more robust and sometimes more interpretable than transcript-level 
+abundances.
+The `rowData` contains the information about the corresponding gene for each 
+transcript, in the `gene_id` column, and *tximeta* provides a function 
+to summarize on the gene level:
+
+* Counts are added up
+* TPMs are added up
+* Transcript lengths are added up after weighting by the respective transcript TPMs
+
+```{r summarizetogene}
+## Summarize quantifications on the gene level
+sg <- tximeta::summarizeToGene(st)
+sg
+```
+
+Now we have a new `RangedSummarizedExperiment` object, with one row per gene.
+The row ranges have been summarized as well, and can be used for subsetting 
+and interpretation just as for the transcripts.
+
+At this point, the only information we have about the genes in our data set, 
+apart from their genomic location and the associated transcript IDs, is the 
+Ensembl ID.
+Often we need additional annotations, such as gene symbols.
+Bioconductor provides a range of annotation packages:
+
+* `OrgDb` packages, providing gene-based annotations for a given organism
+* `TxDb` and `EnsDb` packages, providing transcript ranges for a given genome build
+* `BSgenome` packages, providing the genome sequence for a given genome build
+
+For our purposes here, the appropriate `OrgDb` package is the most suitable, 
+since it contains gene-centric ID conversion tables.
+Since this is human data, we will use the `r Biocpkg("org.Hs.eg.db")` package.
+
+```{r addsymbol}
+## Add gene symbols
+sg <- tximeta::addIds(sg, "SYMBOL", gene = TRUE)
+sg
+head(rowData(sg))
+```
+
+To see a list of the possible columns, use the `columns` function from the 
+`r Biocpkg("AnnotationDbi")` package:
+
+```{r listcols}
+AnnotationDbi::columns(org.Hs.eg.db)
+```
+
+We can even add annotations where we expect (and would like to retain) 
+multiple mapping values, e.g., associated GO terms:
+
+```{r addgo}
+sg <- addIds(sg, "GO", multiVals = "list", gene = TRUE)
+head(rowData(sg))
+```
+
+Note that *Salmon* returns *estimated* or *expected* counts, which are not necessarily
+integers. They may need to be rounded before they are passed to count-based
+statistical methods. To obtain consistent results with different
+pipelines, we round the estimated counts here (note that in practice, 
+`r Biocpkg("DESeq2")` will automatically round the counts, while 
+`r Biocpkg("edgeR")` will work well also with the non-integer values).
+
+```{r roundcounts}
+assay(sg, "counts") <- round(assay(sg, "counts"))
+```
+
+
+# Representing counts for differential expression packages
+
+At this point, we have a gene-level count matrix, contained in our 
+*SummarizedExperiment* object. 
+This is a branching point where we could use a variety of
+Bioconductor packages for exploration and differential expression of the count
+matrix, including `r Biocpkg("edgeR")` [@Robinson2009EdgeR], 
+`r Biocpkg("DESeq2")` [@Love2014Moderated], `r Biocpkg("limma")` with the voom
+method [@Law2014Voom], `r Biocpkg("DSS")` [@Wu2013New], `r Biocpkg("EBSeq")`
+[@Leng2013EBSeq] and `r Biocpkg("BaySeq")` [@Hardcastle2010BaySeq]. We will
+continue using *DESeq2* and *edgeR*.
+
+Bioconductor software packages often define and use a custom class for storing
+data that makes sure that all the needed data slots are consistently provided
+and fulfill any requirements. In addition, Bioconductor has general data classes
+(such as the *SummarizedExperiment*) that can be used to move data between
+packages. The `r Biocpkg("DEFormats")` package can be useful for converting
+between different classes. The core Bioconductor classes also provide useful
+functionality: for example, subsetting or reordering the rows or columns of a
+*SummarizedExperiment* automatically subsets or reorders the associated
+*rowRanges* and *colData*, which can help to prevent accidental sample swaps
+that would otherwise lead to spurious results. With *SummarizedExperiment* this
+is all taken care of behind the scenes.
+
+Each of the packages we will use for differential expression has a specific 
+class of object used to store the summarization of the RNA-seq experiment and 
+the intermediate quantities that are calculated during the statistical analysis 
+of the data. *DESeq2* uses a *DESeqDataSet* and *edgeR* uses a *DGEList*.
+
+## The *DESeqDataSet*, sample information, and the design formula
+
+In *DESeq2*, the custom class is called *DESeqDataSet*. It is built on top of
+the *SummarizedExperiment* class, and it is easy to convert 
+*SummarizedExperiment* objects into *DESeqDataSet* objects. One of the two main
+differences compared to a *SummarizedExperiment* object is that the `assay` slot
+is instead accessed using the `counts` accessor function, and the *DESeqDataSet*
+class enforces that the values in this matrix are non-negative integers.
+
+A second difference is that the *DESeqDataSet* has an associated *design
+formula*. The experimental design is specified at the beginning of the analysis,
+as it will inform many of the *DESeq2* functions how to treat the samples in the
+analysis (one exception is the size factor estimation, i.e., the adjustment for
+differing library sizes, which does not depend on the design formula). The
+design formula tells which columns in the sample information table (`colData`) 
+specify the experimental design and how these factors should be used in the
+analysis.
+
+Let's remind ourselves of the design of our experiment:
+
+```{r cdsg}
+colData(sg)
+```
+
+We have samples from four different conditions, and six donors:
+
+```{r tabcoldata}
+table(colData(sg)$condition_name)
+table(colData(sg)$line_id)
+```
+
+
+We want to find the changes in gene expression that can be associated with
+the different treatments, but we also want to control for differences between the
+donors. The design which accomplishes this is obtained by writing 
+`~ line_id + condition_name`. By including `line_id`, terms will be 
+added to the model which
+account for differences across donors, and by adding `condition_name` we get 
+terms representing the different treatment effects.
+
+**Note:** it will be helpful for us if the first level of a factor is the 
+reference level (e.g. control, or untreated samples). The reason is that by
+specifying this, functions further in the pipeline can be used and will give
+comparisons such as 'treatment vs control', without needing to specify
+additional arguments.
+
+We can *relevel* the `condition_name` factor like so: 
+
+```{r relevelsg}
+colData(sg)$condition_name <- factor(colData(sg)$condition_name)
+colData(sg)$condition_name <- relevel(colData(sg)$condition_name, ref = "naive")
+colData(sg)$condition_name
+```
+
+You can use R's formula notation to express any fixed-effects experimental
+design for *edgeR* or *DESeq2*. Note that these packages use the same formula
+notation as, for instance, the `lm` function of base R.
+
+Using the `r Biocpkg("ExploreModelMatrix")` R/Bioconductor package, we can 
+represent our design in a graphical way: 
+
+```{r emmvis, fig.width = 10, fig.height = 8, message = FALSE}
+library(ExploreModelMatrix)
+vd <- VisualizeDesign(sampleData = colData(sg), 
+                      designFormula = ~ line_id + condition_name,
+                      textSizeFitted = 4)
+vd$plotlist
+vd$cooccurrenceplots
+```
+
+We can also open the interactive interface to explore our design further: 
+
+```{r emm, eval=FALSE}
+ExploreModelMatrix(sampleData = colData(sg), 
+                   designFormula = ~ line_id + condition_name)
+```
+
+
+To generate a *DESeqDataSet* object from a *SummarizedExperiment* object, we 
+only need to additionally provide the experimental design in terms of a formula.
+
+```{r dsds}
+dds <- DESeqDataSet(sg, design = ~ line_id + condition_name)
+```
+
+We can also create a *DESeqDataSet* directly from a count matrix, a data frame
+with sample information and a design formula (see the `DESeqDataSetFromMatrix` 
+function). 
+
+## The *DGEList* 
+
+As mentioned above, the *edgeR* package uses another type of data container, 
+namely a *DGEList* object. *tximeta* provides a convenient wrapper function 
+to generate a *DGEList* from the gene-level *SummarizedExperiment* object: 
+
+```{r dgelist, message=FALSE}
+library(edgeR)
+
+dge <- makeDGEList(sg)
+## Add sample information
+stopifnot(rownames(dge$samples) == rownames(colData(sg)))
+dge$samples <- cbind(dge$samples, colData(sg))
+names(dge)
+head(dge$samples)
+```
+
+As for the *DESeqDataSet*, a *DGEList* can also be generated 
+directly from a count matrix and sample metadata (see the `DGEList()` 
+constructor function).
+Just like the *SummarizedExperiment* and the *DESeqDataSet*, the *DGEList* 
+contains all the information we need: the count matrix, information about the
+samples (the columns of the count matrix), and information about the genes (the
+rows of the count matrix). One difference compared to the *DESeqDataSet* is that
+the experimental design is not defined when creating the *DGEList*, but later in
+the workflow.
+
+# Filtering
+
+It is often helpful to filter out lowly expressed genes before continuing 
+with the analysis, to remove features that have nearly no information, 
+increase the speed of the analysis and reduce the size of the data. 
+At the very least we exclude genes with zero counts across 
+all samples. 
+
+```{r filtering0}
+nrow(dds)
+table(rowSums(assay(dds, "counts")) == 0)
+```
+
+Here, we additionally remove genes that have a single read across the samples. 
+
+```{r filtering1}
+keep <- rowSums(counts(dds)) > 1
+dds <- dds[keep, ]
+dge <- dge[match(rownames(dds), rownames(dge)), ]
+dim(dds)
+dim(dge)
+```
+
+Importantly, the group information should *not* be used to define the filtering 
+criterion, since that can interfere with the validity of the p-values downstream.
+
+# Exploratory analysis and visualization
+
+There are two separate analysis paths in this tutorial:
+
+1. *visual exploration* of sample relationships, in which we will discuss
+transformation of the counts for computing distances or making plots
+2. *statistical testing* for differences attributable to treatment, controlling
+for donor effects
+
+Importantly, the statistical testing methods rely on original count data (not
+scaled or transformed) for calculating the precision of measurements. However,
+for visualization and exploratory analysis, transformed counts are typically
+more suitable. Thus, it is critical to separate the two workflows and use the 
+appropriate input data for each of them.
+
+## Transformations
+
+Many common statistical methods for exploratory analysis of multidimensional
+data, for example clustering and *principal components analysis* (PCA), work
+best for data that generally has the same range of variance at different ranges
+of the mean values. When the expected amount of variance is approximately the
+same across different mean values, the data is said to be *homoskedastic*. For 
+RNA-seq raw counts, however, the variance grows with the mean. For example, if
+one performs PCA directly on a matrix of size-factor-normalized read counts, the
+result typically depends only on the few most strongly expressed genes because
+they show the largest absolute differences between samples. A simple and often
+used strategy to avoid this is to take the logarithm of the normalized count
+values plus a small pseudocount; however, now the genes with the very lowest
+counts will tend to dominate the results because, due to the strong Poisson
+noise inherent to small count values, and the fact that the logarithm amplifies
+differences for the smallest values, these low count genes will show the
+strongest relative differences between samples.
+
+As a solution, *DESeq2* offers transformations for count data that stabilize the
+variance across the mean: the *regularized logarithm* (rlog) and the *variance
+stabilizing transformation* (VST). These have slightly different
+implementations, discussed a bit in the *DESeq2* paper and in the vignette, but
+a similar goal of stabilizing the variance across the range of values. Both
+produce log2-like values for high counts. Here we will use the variance
+stabilizing transformation implemented with the `vst` function. 
+
+```{r vsd}
+vsd <- DESeq2::vst(dds)
+```
+
+This returns a *DESeqTransform* object...
+
+```{r classvsd}
+class(vsd)
+```
+
+...which retains all the column metadata that was attached to the
+*DESeqDataSet*:
+
+```{r headvsd}
+head(colData(vsd), 3)
+```
+
+
+## PCA plot
+
+One way to visualize sample-to-sample distances is a principal components 
+analysis (PCA). In this ordination method, the data points (here, the samples) 
+are projected onto the 2D plane such that they spread out in the two directions 
+that explain most of the differences (Figure below). The x-axis (the first
+principal component, or *PC1*) is the direction that separates the data points
+the most (i.e., the direction with the largest variance). The y-axis (the second
+principal component, or *PC2*) represents the direction with largest variance
+subject to the constraint that it must be *orthogonal* to the first direction.
+The percent of the total variance that is contained in the direction is printed
+in the axis label. Note that these percentages do not sum to 100%, because there
+are more dimensions that contain the remaining variance (although each of these
+remaining dimensions will explain less than the two that we see).
+
+```{r plotpca, fig.width=6, fig.height=4.5}
+DESeq2::plotPCA(vsd, intgroup = "condition_name")
+```
+
+
+## MDS plot
+
+Another way to reduce dimensionality, which is in many ways similar to PCA, is 
+*multidimensional scaling* (MDS). For MDS, we first have to calculate all
+pairwise distances between our objects (samples in this case), and then create a
+(typically) two-dimensional representation where these pre-calculated distances
+are represented as accurately as possible. This means that depending on how the
+pairwise sample distances are defined, the two-dimensional plot can be very
+different, and it is important to choose a distance that is suitable for the
+type of data at hand.
+
+*edgeR* contains a function `plotMDS`, which operates on a *DGEList* object and 
+generates a two-dimensional MDS representation of the samples. The default 
+distance between two samples can be interpreted as the "typical" log fold change
+between the two samples, for the genes that are most different between them (by 
+default, the top 500 genes, but this can be modified). We generate an MDS plot
+from the *DGEList* object `dge`, coloring by the treatment and using different
+plot symbols for different donors. 
+
+**Note:** Since the *DGEList* was created using the `makeDGEList` function, 
+the average transcript length offsets have been incorporated in the object and 
+will be used as offsets in downstream analysis. If this is not the case, 
+we need to estimate TMM normalization factors before performing further analysis.
+
+```{r plotmds}
+# dge <- edgeR::calcNormFactors(dge)
+plotMDS(dge, top = 500, labels = NULL, 
+        col = as.numeric(dge$samples$condition_name), 
+        cex = 0.5, gene.selection = "common")
+```
+
+
+# Differential expression analysis
+
+## Performing differential expression testing with *DESeq2*
+
+As we have already specified an experimental design when we created the 
+*DESeqDataSet*, we can run the differential expression pipeline on the raw 
+counts with a single call to the function `DESeq`. We can also plot the
+estimated dispersions.
+
+```{r DESeq2call}
+dds <- DESeq2::DESeq(dds)
+DESeq2::plotDispEsts(dds)
+```
+
+The `DESeq` function will print out a message for the various steps it performs. These
+are described in more detail in the manual page, which can be
+accessed by typing `?DESeq`. Briefly these are: the estimation of size factors
+(controlling for differences in the sequencing depth of the samples), the
+estimation of dispersion values for each gene, and fitting a generalized linear
+model.
+
+A *DESeqDataSet* is returned that contains all the fitted parameters within it,
+and the following section describes how to extract out results tables of
+interest from this object.
+
+Calling the `results` function without any arguments will extract the estimated log2
+fold changes and *p* values for the last variable in the design formula. If
+there are more than 2 levels for this variable, `results` will extract the
+results table for a comparison of the last level over the first level. This
+comparison is printed at the top of the output: `condition name SL1344 vs naive`.
+Other comparisons can be performed via the `contrast` argument. For example, 
+we will focus on comparing the IFN gamma treatment to the naive group.
+
+```{r deseq2results}
+## Default - SL1344 vs naive
+res <- DESeq2::results(dds)
+head(res)
+
+## We'll instead focus on IFNgamma vs naive
+res <- DESeq2::results(dds, contrast = c("condition_name", "IFNg", "naive"))
+head(res)
+```
+
+As `res` is a *DataFrame* object, it carries metadata with information on the
+meaning of the columns:
+
+```{r mcolsres}
+mcols(res, use.names = TRUE)
+```
+
+The first column, `baseMean`, is a just the average of the normalized count
+values, dividing by size factors, taken over all samples in the *DESeqDataSet*. 
+The remaining four columns refer to a specific contrast, namely the comparison
+of the `IFNg` level over the `naive` level for the factor variable 
+`condition_name`. 
+
+The column `log2FoldChange` is the effect size estimate. It tells us how much
+the gene's expression seems to have changed due to infection with IFN gamma
+in comparison to naive samples. This value is reported on a logarithmic
+scale to base 2: for example, a log2 fold change of 1.5 means that the gene's
+expression is increased by a multiplicative factor of 2^1.5.
+
+Of course, this estimate has an uncertainty associated with it, which is
+available in the column `lfcSE`, the standard error estimate for the log2 fold
+change estimate. We can also express the uncertainty of a particular effect
+size estimate as the result of a statistical test. The purpose of a test for
+differential expression is to test whether the data provides sufficient evidence
+to conclude that this value is really different from zero. *DESeq2* performs for
+each gene a *hypothesis test* to see whether evidence is sufficient to decide 
+against the *null hypothesis* that there is zero effect of the treatment on the
+gene and that the observed difference between treatment and control was merely
+caused by experimental variability (i.e., the type of variability that you can
+expect between different samples in the same treatment group). As usual in
+statistics, the result of this test is reported as a *p* value, and it is found
+in the column `pvalue`. Remember that a *p* value indicates the probability that
+an effect as strong as the observed one, or even stronger, would be seen under
+the situation described by the null hypothesis.
+
+We can also summarize the results with the following line of code, which reports
+some additional information, that will be covered in later sections.
+
+```{r prepisee}
+summary(res)
+hist(res$pvalue)
+## Remove the genes that were filtered out in the independent filtering
+hist(res$pvalue[!is.na(res$padj)])
+
+## We also add a couple of extra columns that will be useful for the interactive
+## visualization later
+rowData(dds)$log10Dispersion <- log10(rowData(dds)$dispersion)
+
+restmp <- DataFrame(res)
+restmp$log10BaseMean <- log10(restmp$baseMean)
+restmp$mlog10PValue <- -log10(restmp$pvalue)
+colnames(restmp) <- paste0("DESeq2_IFNg_vs_naive_", colnames(restmp))
+rowData(dds) <- cbind(rowData(dds), restmp)
+```
+
+Note that there are many genes with differential expression due to IFN gamma
+treatment at the FDR level of 10%. There are
+two ways to be more strict about which set of genes are considered significant:
+
+* lower the false discovery rate threshold (the threshold on `padj` in the
+results table)
+* raise the log2 fold change threshold from 0 using the `lfcThreshold` argument
+of *results*
+
+If we lower the false discovery rate threshold, we should also tell this value
+to `results()`, so that the function will use an alternative threshold for the
+optimal independent filtering step:
+
+```{r res005}
+res.05 <- results(dds, alpha = 0.05, 
+                  contrast = c("condition_name", "IFNg", "naive"))
+table(res.05$padj < 0.05)
+```
+
+If we want to raise the log2 fold change threshold, so that we test for genes
+that show more substantial changes due to treatment, we simply supply a value on
+the log2 scale. For example, by specifying `lfcThreshold = 1`, we look for genes
+that show significant effects of treatment on gene counts more than doubling or
+less than halving, because 2^1 = 2.
+
+```{r reslfc}
+resLFC1 <- results(dds, lfcThreshold = 1, 
+                   contrast = c("condition_name", "IFNg", "naive"))
+summary(resLFC1)
+table(resLFC1$padj < 0.1)
+```
+
+Sometimes a subset of the *p* values in `res` will be `NA` ("not available").
+This is *DESeq*'s way of reporting that all counts for this gene were zero, and
+hence no test was applied. In addition, *p* values can be assigned `NA` if the
+gene was excluded from analysis because it contained an extreme count outlier.
+For more information, see the outlier detection section of the *DESeq2*
+vignette.
+
+With *DESeq2*, there is also an easy way to plot the (normalized, transformed)
+counts for specific genes, using the `plotCounts` function:
+
+```{r plotcounts}
+plotCounts(dds, gene = "ENSG00000126561.16", intgroup = "condition_name", 
+           normalized = TRUE, transform = FALSE)
+```
+
+
+## Performing differential expression testing with *edgeR*
+
+Next we will show how to perform differential expression analysis with *edgeR*.
+Recall that we have a *DGEList* `dge`, containing all the necessary information:
+
+```{r namesdge}
+names(dge)
+```
+
+We first define a design matrix, using the same formula syntax as for *DESeq2*
+above.
+
+```{r designedger}
+design <- model.matrix(~ line_id + condition_name, data = dge$samples)
+head(design)
+```
+
+While *DESeq2* performs independent filtering of lowly expressed genes
+internally, this is done by the user before applying *edgeR*. Here, we filter
+out lowly expressed genes using the `filterByExpr()` function, and then estimate
+the dispersion for each gene. Note that it is important that we specify the
+design in the dispersion calculation (it will be used to determine a 
+suitable number of samples to require a gene to be expressed in). 
+Afterwards, we plot the estimated dispersions.
+
+```{r filter}
+keep <- edgeR::filterByExpr(dge, design)
+dge <- dge[keep, ]
+dge <- edgeR::estimateDisp(dge, design)
+edgeR::plotBCV(dge)
+```
+
+Finally, we fit the generalized linear model and perform the test. In the
+`glmQLFTest` function, we indicate which coefficient (which column in the design
+matrix) that we would like to test for. It is possible to test more general 
+contrasts as well, and the user guide contains many examples on how to do this.
+The `topTags` function extracts the top-ranked genes. You can indicate the
+adjusted p-value cutoff, and/or the number of genes to keep.
+
+```{r edgeRcall}
+fit <- edgeR::glmQLFit(dge, design)
+qlf <- edgeR::glmQLFTest(fit, coef = "condition_nameIFNg")
+tt.all <- edgeR::topTags(qlf, n = nrow(dge), sort.by = "none") # all genes
+hist(tt.all$table$PValue)
+tt <- edgeR::topTags(qlf, n = nrow(dge), p.value = 0.1) # genes with adj.p<0.1
+tt10 <- edgeR::topTags(qlf) # just the top 10 by default
+tt10
+```
+
+The columns in the *edgeR* result data frame are similar to the ones output by
+*DESeq2*. *edgeR* represents the overall expression level on the log-CPM scale
+rather than on the normalized count scale that *DESeq2* uses. The `F` column
+contains the test statistic, and the `FDR` column contains the
+Benjamini-Hochberg adjusted p-values.
+
+We can compare the sets of significantly differentially expressed genes to see
+how the results from the two packages overlap:
+
+```{r deseq2vsedger}
+shared <- intersect(rownames(res), rownames(tt.all$table))
+table(DESeq2 = res$padj[match(shared, rownames(res))] < 0.1, 
+      edgeR = tt.all$table$FDR[match(shared, rownames(tt.all$table))] < 0.1)
+```
+
+We can also compare the two result lists by the ranks:
+
+```{r deseq2vsedgerplot}
+plot(rank(res$pvalue[match(shared, rownames(res))]), 
+     rank(tt.all$table$PValue[match(shared, rownames(tt.all$table))]), 
+     cex = 0.1, xlab = "DESeq2", ylab = "edgeR")
+```
+
+Also with *edgeR* we can test for significance relative to a fold-change
+threshold, using the function `glmTreat`. Below we set the log fold-change
+threshold to 1 (i.e., fold change threshold equal to 2), as for *DESeq2* above.
+
+```{r treat}
+treatres <- edgeR::glmTreat(fit, coef = "condition_nameIFNg", lfc = 1)
+tt.treat <- edgeR::topTags(treatres, n = nrow(dge), sort.by = "none")
+```
+
+
+# Plotting results
+
+## MA plot with DESeq2
+
+An *MA-plot* [@Dudoit2002Statistical] provides a useful overview for an 
+experiment with a two-group comparison. The log2 fold change for
+a particular comparison is plotted on the y-axis and the average of the counts
+normalized by size factor is shown on the x-axis ("M" for minus, because a log
+ratio is equal to log minus log, and "A" for average). Each gene is represented
+with a dot. Genes with an adjusted *p* value below a threshold (here 0.1, the
+default with *DESeq2*) are shown in color
+
+```{r plotma}
+DESeq2::plotMA(res, ylim = c(-5, 5))
+```
+
+We see that there are many genes with low expression levels that nevertheless 
+have large fold changes (since we are, effectively, dividing by a small 
+number). To get more interpretable log fold changes (e.g., for ranking genes), 
+we use the `lfcShrink` function to shrink the log2
+fold changes for the comparison of IFN gamma-treated vs naive samples. There are
+three types of shrinkage estimators in *DESeq2*, which are covered in the
+vignette. Here we specify the _apeglm_ method for shrinking coefficients, which
+is good for shrinking the noisy LFC estimates while giving low bias LFC
+estimates for true large differences [@Zhu2019-apeglm]. To use apeglm we specify
+a coefficient from the model to shrink, either by name or number as the
+coefficient appears in `resultsNames(dds)`.
+
+```{r apeglm}
+library(apeglm)
+DESeq2::resultsNames(dds)
+resape <- DESeq2::lfcShrink(dds, coef = "condition_name_IFNg_vs_naive", type = "apeglm")
+DESeq2::plotMA(resape, ylim = c(-5, 5))
+```
+
+
+## MA / Smear plot with edgeR
+
+In *edgeR*, the MA plot is obtained via the `plotSmear` function. 
+
+```{r smear}
+edgeR::plotSmear(qlf, de.tags = rownames(tt$table))
+```
+
+## Heatmap of the most significant genes
+
+Another way of representing the results of a differential expression analysis is
+to construct a heatmap of the top differentially expressed genes. Here, we would
+expect the contrasted sample groups to cluster separately. A heatmap is a "color
+coded expression matrix", where the rows and columns are clustered using 
+hierarchical clustering. Typically, it should not be applied to counts, but 
+works better with transformed values. Here we show how it can be applied to the 
+variance-stabilized values generated above. We choose the top 30 differentially
+expressed genes. There are many functions in R that can generate heatmaps, here
+we show the one from the `r CRANpkg("pheatmap")` package.
+
+```{r heatmap, fig.width = 10, fig.height = 10, message=FALSE}
+library(pheatmap)
+stopifnot(rownames(vsd) == rownames(res))
+mat <- assay(vsd)
+rownames(mat) <- rowData(vsd)$SYMBOL
+mat <- mat[head(order(res$padj), 30), ]
+mat <- mat - rowMeans(mat)
+df <- as.data.frame(colData(vsd)[, c("condition_name"), drop = FALSE])
+pheatmap(mat, annotation_col = df)
+```
+
+## Interactive visualization with iSEE
+
+`r Biocpkg("iSEE")` is a Bioconductor package that allows interactive exploration of any data
+stored in a *SummarizedExperiment* container, or any class extending this (such
+as, e.g., the *DESeqDataSet* class, or the *SingleCellExperiment* for
+single-cell data). By calling the `iSEE()` function with the object as the first
+argument, an interactive application will be opened, in which all observed
+values as well as metadata columns (`rowData` and `colData`) can be explored.
+
+```{r isee, warning = FALSE, message = FALSE}
+library(iSEE)
+library(iSEEu)
+dds <- iSEEu::registerAveAbPatterns(dds, "log10BaseMean")
+dds <- iSEEu::registerLogFCPatterns(dds, "log2FoldChange")
+dds <- iSEEu::registerPValuePatterns(dds, "pvalue")
+app <- iSEE(dds, initial = list(MAPlot(), VolcanoPlot(), 
+                                RowDataTable(), FeatureAssayPlot()))
+## shiny::runApp(app)
+```
+
+## Exporting results to CSV file
+
+You can easily save the results table in a CSV file that you can then share or 
+load with a spreadsheet program such as Excel (note, however, that Excel 
+sometimes does funny things to gene identifiers [@Zeeberg2004Excel;
+@Ziemann2016Excel]). The call to *as.data.frame* is necessary to convert the
+*DataFrame* object to a *data.frame* object
+that can be processed by `write.csv`. Here, we first show how to add gene
+symbols to the output table, and then export just the top 100 genes for
+demonstration.
+
+```{r exportcsv}
+stopifnot(all(rownames(res) == rownames(dds)))
+res$symbol <- rowData(dds)$SYMBOL
+
+resOrdered <- res[order(res$padj), ]
+head(resOrdered)
+
+resOrderedDF <- as.data.frame(resOrdered)[seq_len(100), ]
+write.table(cbind(id = rownames(resOrderedDF), resOrderedDF), 
+            file = "results.txt", quote = FALSE, sep = "\t",
+            row.names = FALSE)
+```
+
+# Functional analysis
+
+In order to interpret the differential expression analysis results in terms 
+of known gene sets, we can also apply a functional enrichment test. To do this, 
+we first need to define the collection of gene sets that we would like to 
+test for enrichment. Here, we use the `r CRANpkg("msigdbr")` package to 
+retrieve all 'biological process' gene sets from the gene ontology. We then 
+use the `camera` method to perform a competitive gene set test for each of these 
+sets. We provide the test statistics from *DESeq2* as the genewise statistics, 
+which will be compared between genes in the gene sets and those outside. 
+
+```{r camera, message = FALSE}
+library(msigdbr)
+genesets <- msigdbr(species = "Homo sapiens", 
+                    category = "C5", subcategory = "BP") %>%
+    dplyr::select(gs_name, ensembl_gene)
+genesets <- as(lapply(split(genesets, f = genesets$gs_name), 
+                      function(w) unique(w$ensembl_gene)),
+               "CharacterList")
+genesets
+camres <- cameraPR(
+    statistic = structure(res$stat, 
+                          names = sub("\\.[0-9]+$", "", rownames(res))),
+    index = ids2indices(as.list(genesets), 
+                        sub("\\.[0-9]+$", "", rownames(res)), 
+                        remove.empty = TRUE),
+    sort = TRUE
+)
+head(camres)
+```
+
+
+
+
+# Differential transcript expression with swish
+
+Next, we perform a differential transcript expression analysis with 
+`r Biocpkg("swish")`. Note that, as opposed to the workflow above, we will 
+make use of the transcript-level abundance estimates. In addition, we need the 
+inferential replicates. Since we ignored these when importing the data above, 
+we will re-import it here. 
+
+```{r importswish}
+head(coldata)
+st <- tximeta(coldata = coldata, type = "salmon", dropInfReps = FALSE)
+```
+
+We can check that the inferential replicates were imported as well: 
+
+```{r checkinfreps}
+assayNames(st)
+```
+
+Since we are interested in comparing the `naive` and `IFNg` groups, we 
+subset our object to these groups.
+
+```{r subsetst}
+st <- st[, st$condition_name %in% c("naive", "IFNg")]
+st$condition_name <- factor(st$condition_name, c("naive", "IFNg"))
+```
+
+Next, we run the DTE analysis with *swish*. First we'll scale the inferential 
+replicates, followed by labeling the rows with sufficient counts for running 
+differential expression, and then calculating the statistics. 
+
+```{r swishdte, message = FALSE}
+library(fishpond)
+st <- scaleInfReps(st, lengthCorrect = TRUE)
+st <- labelKeep(st)
+st <- st[mcols(st)$keep, ]
+set.seed(1)
+st <- swish(st, x = "condition_name", pair = "line_id", nperms = 100)
+```
+
+The results are stored in `mcols(st)`. 
+
+```{r checkst}
+head(mcols(st))
+table(mcols(st)$qvalue < 0.05)
+## Most significant transcripts
+tophits <- mcols(st)[order(mcols(st)$qvalue, -abs(mcols(st)$log2FC)), ]
+head(tophits)
+hist(mcols(st)$pvalue, col = "grey")
+```
+
+We can plot the results for some of the most significant transcripts.
+
+```{r plotdte}
+plotInfReps(st, idx = rownames(tophits)[1],
+            x = "condition_name", cov = "line_id")
+plotInfReps(st, idx = rownames(tophits)[43],
+            x = "condition_name", cov = "line_id")
+plotInfReps(st, idx = rownames(tophits)[60],
+            x = "condition_name", cov = "line_id")
+plotMASwish(st, alpha = 0.05)
+```
+
+We can also use the plotting functions of *swish* to plot the inferential 
+replicates for the top-ranked genes in the differential gene expression 
+analysis. 
+
+```{r plotswishdge}
+## Summarize on the gene level
+sg_inf <- summarizeToGene(st)
+sg_inf <- sg_inf[, sg_inf$condition_name %in% c("naive", "IFNg")]
+sg_inf$condition_name <- factor(sg_inf$condition_name, c("naive", "IFNg"))
+plotInfReps(sg_inf, idx = rownames(resOrdered)[1],
+            x = "condition_name", cov = "line_id")
+```
+
+# Differential transcript usage
+
+Finally, we show how to run differential transcript usage analysis with 
+*swish* and `r Biocpkg("DEXSeq")`. 
+With *swish*, we can build upon the data imported earlier to calculate 
+isoform proportions and perfom a permutation test based on these. 
+
+```{r swishdtu}
+iso <- isoformProportions(st)
+iso <- swish(iso, x = "condition_name", pair = "line_id", 
+             nperms = 100)
+```
+
+For *DEXSeq*, we will again re-import the data, since we would like the 
+transcript counts to represent so called 'scaled TPM' values (similarly to 
+what *swish* will do internally when scaling the inferential replicates, 
+to avoid differences in transcript length being interpreted as differences 
+in relative abundance between groups). *tximeta* can do this for us, 
+effectively populating the 'counts' assay with TPMs, scaled up to the 
+observed library size to be comparable in size to the actual counts. For 
+*DEXSeq*, we further subset the transcripts to those on chromosome 18, for 
+computational time reasons. 
+
+```{r dexseq}
+head(coldata)
+st <- tximeta(coldata = coldata, type = "salmon", 
+              countsFromAbundance = "scaledTPM")
+st <- st[, st$condition_name %in% c("naive", "IFNg")]
+st$condition_name <- factor(st$condition_name, c("naive", "IFNg"))
+st$sample_id <- colnames(st)
+st <- st[seqnames(rowRanges(st)) == "chr18", ]
+
+library(DEXSeq)
+dxd <- DEXSeqDataSet(countData = round(assay(st, "counts")),
+                     sampleData = as.data.frame(colData(st)),
+                     design = ~sample + exon + condition_name:exon,
+                     featureID = rowData(st)$tx_name,
+                     groupID = as.character(rowData(st)$gene_id))
+dxd <- estimateSizeFactors(dxd)
+dxd <- estimateDispersions(dxd, quiet = TRUE)
+dxd <- testForDEU(dxd, reducedModel = ~sample + exon)
+dxr <- DEXSeqResults(dxd, independentFiltering = FALSE)
+qval <- perGeneQValue(dxr)
+dxr.g <- data.frame(gene = names(qval), qval)
+head(dxr)
+```
+
+Finally, we compare the p-value ranks for the genes shared by the two analyses. 
+
+```{r plotswishdexseq}
+shared <- intersect(dxr$featureID, rownames(mcols(iso)))
+plot(rank(dxr[match(shared, dxr$featureID), "pvalue"]),
+     rank(mcols(iso)[shared, "pvalue"]), cex = 0.1,
+     xlab = "DEXSeq", ylab = "swish")
+```
+
+# Session information
+
+```{r}
+sessionInfo()
+```
+
+# References
+
