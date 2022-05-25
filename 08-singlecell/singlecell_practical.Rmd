@@ -767,6 +767,29 @@ contains a collection of tutorials (including one for the
 [same data set](https://satijalab.org/seurat/articles/pbmc3k_tutorial.html) 
 that we studied here). 
 
+# Bonus content
+
+TODO: Think whether we want to include any of the multi-condition, multi-sample single cell datasets
+
+TODO: this would require some thoughts re: 
+- data integration
+- DE/DA/DS
+
+TODO: or maybe just refer to the OSCA book and the many chapters where this is in very much excellent detail?
+
+# `iSEE` my data
+
+iSEE can offer an extreme variety of plots and visual representations of single cell datasets, especially linking the panels together to perform fine-grained analyses otherwise not possible with "simple static plots".
+
+We will refer to the material in https://isee.github.io/iSEEWorkshopEuroBioc2020/ for more examples (self-contained "recipes" that cover potential typical use cases).
+
+An example of what iSEE can do with larger collections of data is available here:
+
+https://github.com/iSEE/iSEE_instances/
+
+It can be also used as a powerful portal to *tell a story* about your data, like we did in http://shiny.imbei.uni-mainz.de:3838/covid_IT
+
+
 
 # Session information {-}
 
