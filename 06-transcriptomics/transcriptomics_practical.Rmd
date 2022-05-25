@@ -1008,10 +1008,12 @@ camres <- cameraPR(
 head(camres)
 ```
 
+## Streamlining interpretation of results with GeneTonic
 
-* some plugs to clusterProfiler and or topGO
-* GeneTonicList assembly - as easy as it gets
-* Opening up GeneTonic on these object
+There are many alternatives to perform enrichment analysis in the context of R and Bioconductor.
+Among these, *topGO* and *clusterProfiler* are two popular options.
+
+We can perform the analysis by following the instructions in the next chunk
 
 ```{r}
 library("GeneTonic")
@@ -1040,7 +1042,14 @@ clupro_DE_macrophage_IFNg_vs_naive <- clusterProfiler::enrichGO(
   qvalueCutoff = 0.05,
   readable = FALSE
 )
+```
 
+"Since it is bioinformatics", every software package can be expected to return a (slightly) different-but-similar-in-content output format.
+To simplify the interpretation of transcriptome datasets, the *GeneTonic* package offers an interactive application to explore in depth all the workflow results.
+
+As a first step, we convert the output of each tool to a consolidated "standard" format, as expected by GeneTonic - this is the first step to construct a `GeneTonicList` object, as a single container to perform all operations on afterwards, be it in the app or offline by using its functionality in scripts/notebooks.
+
+```{r}
 res_enrich_topGO <- shake_topGOtableResult(topgo_DE_macrophage_IFNg_vs_naive)
 res_enrich_clupro <- shake_enrichResult(clupro_DE_macrophage_IFNg_vs_naive)
 
@@ -1054,13 +1063,24 @@ gtl_macrophage <- GeneTonicList(
   )
 )
 
-## and that is it!
-# GeneTonic(gtl = gtl_macrophage)
+# we can store this object as serialized file to load/share/...
+saveRDS(gtl_macrophage, "gtl_macrophage.RDS")
 ```
 
-TODO: the following can become bonus content? Something to touch upon or not, depending on the time we have left/the status of the students
+After that, we would simply have to call the `GeneTonic()` function specifying the `gtl` parameter - this can also be passed at runtime
+
+```{r eval=FALSE}
+## and that is it!
+GeneTonic(gtl = gtl_macrophage)
+
+## or if expecting to upload at runtime... (e.g. used as a server-like app)
+GeneTonic()
+```
+
 
 # Differential transcript expression with swish
+
+TODO: the following can become bonus content? Something to touch upon or not, depending on the time we have left/the status of the students
 
 Next, we perform a differential transcript expression analysis with 
 `r Biocpkg("swish")`. Note that, as opposed to the workflow above, we will 
