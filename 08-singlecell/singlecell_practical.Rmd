@@ -19,7 +19,7 @@ output:
     code_download: true
 editor_options: 
   chunk_output_type: console
-
+bibliography: references.bib
 ---
 
 ```{r setup, include = FALSE}
@@ -31,3 +31,747 @@ knitr::opts_chunk$set(
   message = FALSE
 )
 ```
+
+
+<!-- <script type="text/javascript" -->
+<!--   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"> -->
+<!-- </script> -->
+
+
+```{r style, echo=FALSE, message=FALSE, warning=FALSE, results="asis"}
+suppressPackageStartupMessages({
+    library(BiocStyle)
+    library(knitr)
+    library(rmarkdown)
+})
+options(width = 100)
+opts_chunk$set(fig.width = 5, fig.height = 5, eval = TRUE)
+```
+
+# Acknowledgements
+
+Parts of the material in this tutorial were developed in collaboration with 
+Panagiotis Papasaikas, FMI Computational Biology. Some other parts are taken from, 
+or inspired by, the 'Orchestrating Single-Cell Analysis with Bioconductor' book, 
+available from https://bioconductor.org/books/release/OSCA/. 
+
+# Introduction
+
+For this tutorial, we will use an example data set from the `r Biocpkg("TENxPBMCData")`
+Bioconductor package. This package provides access to a number of PBMC data sets generated 
+with the 10x Genomics Chromium platform. Here we will use one containing 
+approximately 3,000 cells. The *SingleCellExperiment* object included in 
+the package contains gene annotations, including the 
+Ensembl gene ID and the gene symbol; to make it easier to interpret the results 
+we use the gene symbol wherever possible.
+
+```{r, message = FALSE, warning = FALSE}
+library(TENxPBMCData)
+library(SingleCellExperiment)
+sce <- TENxPBMCData("pbmc3k")
+rownames(sce) <- scater::uniquifyFeatureNames(
+    ID = rowData(sce)$ENSEMBL_ID, 
+    names = rowData(sce)$Symbol_TENx
+)
+sce
+```
+
+The loaded object has no column names, so we set the column names to be the cell barcodes. 
+First, we check that they are all unique. What would you do if they were not (and 
+why might that happen)?
+
+```{r, message = FALSE}
+all(gsub("-1", "", sce$Barcode) == sce$Sequence)
+any(duplicated(sce$Sequence))
+```
+
+```{r, message = FALSE}
+colnames(sce) <- sce$Sequence
+```
+
+We can see that `sce` is indeed a *SingleCellExperiment* object, and that the 
+structure is similar to that of a *SummarizedExperiment* object.
+
+```{r}
+sce
+```
+
+Accessing the assay data, row and column annotations is done in the same way as 
+for *SummarizedExperiment* objects. There is also an additional `counts()` 
+accessor for the `counts` assay.
+
+While the structure of the scRNA-seq data is similar to that of the bulk data, 
+there are also important differences that affect the downstream analysis. One 
+of these differences is that single-cell data is much more _sparse_; in other 
+words, there are many more zeros in the count matrix from a single-cell 
+experiment than from a bulk experiment. This is due to things such as:
+
+* the much lower sequencing depth per cell/sample (especially for 
+droplet-based protocols)
+* not every individual cell expressing each gene
+* a failure of the library preparation to capture many of the expressed 
+transcript molecules
+
+Let's check the fraction of zeros in our count matrix:
+
+```{r}
+mean(counts(sce) == 0)
+```
+
+We also calculate the range of library sizes, noting that these are much 
+smaller than the typical values for bulk RNA-seq:
+
+```{r}
+summary(colSums(counts(sce)))
+```
+
+The number of cells in a scRNA-seq data set is typically much (several orders 
+of magnitude) larger than the number of samples in a bulk RNA-seq experiment. 
+Hence, the count matrices can get very large. However, since most of the values 
+are zero, efficient storage modes, where only the non-zero values and the 
+corresponding matrix positions are stored, can be employed. We can make sure 
+that the count matrix in our object is indeed such a _sparse_ matrix 
+(in this particular data set, it is actually provided as a [*DelayedMatrix*](http://www.bioconductor.org/packages/DelayedArray/), which is 
+beyond the scope of this course to discuss in detail, but which can be suitable 
+for very large data matrices that do not fit in memory). 
+
+```{r}
+class(counts(sce))
+counts(sce) <- as(counts(sce), "dgCMatrix")
+class(counts(sce))
+counts(sce)[1:10, 1:10]
+```
+
+# Properties of scRNA-seq data and quality control
+
+We already noted a couple of differences between scRNA-seq data and bulk data: 
+the former typically contains many more observations, and the count matrix is 
+much more sparse. The low amount of starting material for scRNA-seq experiments 
+also results in a high sampling noise, and a lower correlation among cells than 
+among bulk RNA-seq samples. This can be seen in a scatter plot of the observed 
+counts for two randomly selected cells in our example data set:
+
+```{r}
+## Scatter plot of two cells with similar library sizes
+idx <- order(abs(colSums(counts(sce)) - 
+                     median(colSums(counts(sce)))))[1:2]
+colSums(counts(sce))[idx]
+plot(counts(sce)[, idx[1]] + 1, counts(sce)[, idx[2]] + 1, log = "xy")
+```
+
+Note that there are many genes that are not observed in one of the cells, 
+but still have a high number of assigned counts in the other cell. 
+
+How many genes are detected in at least one cell? Compare that to the number of 
+genes detected in each of the individual cells. What does this tell you?
+
+```{r, message = FALSE}
+## Total number of detected genes
+sum(rowSums(counts(sce)) > 0)
+
+## Genes detected in single cells
+summary(colSums(counts(sce) > 0))
+```
+
+This indicates that the gene detection is to some extent random, as expected by 
+the sampling process. In other words, it is not always the same genes that go 
+undetected in all cells.
+
+While we don't observe each gene in each cell, there is still a clear 
+association between the overall expression level of a gene (e.g., total count) 
+and the fraction of cells where it is detected. 
+
+```{r}
+## Dropout plot
+plot(rowSums(counts(sce)), rowMeans(counts(sce) == 0), log = "x")
+```
+
+To simplify further QC, we use the Bioconductor package `r Biocpkg("scater")` to calculate 
+a number of summary QC statistics, both for the cells and for the genes. By 
+providing a subset of genes (here, mitochondrial genes), we can calculate the 
+fraction of counts falling in these genes.
+
+```{r, message = FALSE, warning = FALSE}
+library(scater)
+mt <- rownames(sce)[grep("^MT-", rowData(sce)$Symbol_TENx)]
+mt
+sce <- addPerFeatureQC(sce)
+sce <- addPerCellQC(sce, subsets = list(MT = mt))
+```
+
+This adds a number of columns to the `rowData` and `colData` slots of the
+*SingleCellExperiment* object:
+
+```{r}
+colnames(rowData(sce))
+colnames(colData(sce))
+```
+
+For example, we can plot the distribution of library sizes (`sum`) and the 
+number of detected genes (`detected`) across the cells
+
+```{r}
+hist(log10(sce$sum), breaks = 30)
+hist(sce$detected, breaks = 30)
+```
+
+Finally, we can look at the set of genes accounting for the majority of the 
+counts in the data set. 
+
+```{r}
+scater::plotHighestExprs(sce, n = 15)
+```
+
+The proportion of counts assigned to mitochondrial genes is another useful 
+indicator of cell quality, since high numbers of such reads can be associated 
+to cell damage.
+
+```{r}
+hist(sce$subsets_MT_percent, breaks = 30)
+```
+
+# Filtering
+
+Now that we have calculated the QC metrics, we will use them to filter out 
+low-quality cells that will be excluded from the rest of the analysis. The 
+optimal parameters for filtering are debated and likely data set dependent, 
+but a typical approach is to remove cells that fall 'too far' from the average 
+cells on one or more of the considered criteria. This makes the implicit 
+assumption that 'most' cells are of good quality, which is often sensible. 
+It should also be noted that in some cases, cells that seem to be of bad 
+quality can do so for biological reasons. For example, certain cell types 
+express very few genes, or have a high metabolic rate and consequently express 
+a lot of mitochondrial genes. 
+
+Here, we will exclude cells according to two criteria:
+
+* few detected genes
+* high fraction of mitochondrial genes
+
+For each of these criteria, we exclude cells that are more than 4 median 
+absolute deviations (MAD) from the median across cells, in the direction 
+indicating low quality. 
+
+```{r}
+low_detected <- isOutlier(sce$detected, type = "lower", 
+                          log = TRUE, nmads = 4)
+high_mt <- isOutlier(sce$subsets_MT_percent, type = "higher",
+                     log = FALSE, nmads = 4)
+
+plot(rank(-sce$detected), sce$detected, col = low_detected + 1)
+
+plot(rank(sce$subsets_MT_percent), sce$subsets_MT_percent,
+     col = high_mt + 1)
+```
+
+We filter out the cells identified as being of low quality according to the 
+thresholds defined above. 
+
+```{r, message = FALSE}
+sce$retain <- !low_detected & !high_mt
+sce <- sce[, sce$retain]
+dim(sce)
+```
+
+
+# Normalization
+
+Just as for bulk RNA-seq, the raw scRNA-seq counts are not directly comparable 
+across cells due to, e.g., differences in library sizes. Thus, we need to apply 
+a normalization strategy. There are many approaches to normalization of 
+scRNA-seq data (see e.g. @Lytal2020-hp and @Cole2019-qc
+for comparisons); here, we will use one implemented in the `r Biocpkg("scran")`
+package. Similarly to the TMM and DESeq normalization approaches that we have 
+discussed previously, this works by estimating a size factor for each cell, 
+which incorporates the library size as well as a measure of the RNA composition.
+The bulk RNA-seq methods are sometimes struggling with scRNA-seq due to the 
+large number of zeros; the *scran* approach solves this by repeatedly pooling 
+multiple cells (which reduces the number of zeros), calculating size factors 
+for the pools, and deriving individual size factors for the cells from those of 
+the pools. After calculating the size factors, we normalize the observed counts 
+and log-transform the values. The new "log counts" are placed in a new assay 
+in `sce`, named `logcounts`.
+
+```{r, message = FALSE, warning = FALSE}
+library(scran)
+sce <- computeSumFactors(sce, min.mean = 0.1)
+sce <- logNormCounts(sce)
+assayNames(sce)
+```
+
+We plot the estimated size factors against the total count for each cell. 
+Is there an association? Is this what you expected?
+
+```{r, message = FALSE}
+plot(sce$sum, sizeFactors(sce))
+```
+
+
+# Mean-variance relationship
+
+Variation in gene abundance estimates between different cells can be thought of 
+as the convolution of the technical (mainly sampling) and the biological (e.g 
+cell type) sources of variance. Typically one wants to isolate and focus on the 
+biological variance so that differences due to experimental noise have as small
+an impact as possible on subsequent analyses.  
+There are different approaches to disentangling the technical and biological 
+variability in a single-cell data set. Some of these assume that "most" genes 
+exhibit only technical variability (i.e., most genes are not differentially 
+expressed between different studied cell types). Other approaches assume that 
+the technical variance follows a Poisson distribution (a common distribution 
+capturing sampling variability in count data), and that deviations from the 
+Poisson expectation corresponds to biological variability. 
+
+```{r}
+## Fit a trend
+dec.trend <- modelGeneVar(sce)
+fit.trend <- metadata(dec.trend)
+plot(fit.trend$mean, fit.trend$var, xlab = "Mean of log-expression",
+     ylab = "Variance of log-expression")
+curve(fit.trend$trend(x), col = "dodgerblue", add = TRUE, lwd = 2)
+
+## Poisson assumption
+dec.pois <- modelGeneVarByPoisson(sce)
+plot(dec.pois$mean, dec.pois$total, xlab = "Mean of log-expression",
+     ylab = "Variance of log-expression")
+curve(metadata(dec.pois)$trend(x), col = "dodgerblue", add = TRUE)
+```
+
+In each case, the biological variance of a gene can be estimated as the 
+difference between the total variance and the modelled technical variance. 
+This value can be used to rank the genes, and to select a set of "highly 
+variable" genes to use as the basis of further downstream analysis. Here, we 
+select the top 1,000 genes based on the trend fit, and add these to the 
+`metadata` of the *SingleCellExperiment* object. 
+
+```{r}
+head(dec.trend[order(dec.trend$bio, decreasing = TRUE), ])
+head(dec.pois[order(dec.pois$bio, decreasing = TRUE), ])
+
+hvg.var <- getTopHVGs(dec.trend, n = 1000)
+head(hvg.var)
+metadata(sce)$hvgs <- hvg.var
+```
+
+# Data visualization
+
+For bulk RNA-seq data, we typically use PCA for visualization and exploratory 
+analysis. This can of course also be applied to single-cell RNA-seq data. 
+However, other methods (e.g., tSNE and UMAP) are more commonly used for 
+scRNA-seq. Both tSNE and UMAP are non-linear dimension reduction methods, 
+which focus to a larger extent on retaining _small_ distances. That means that 
+cells that are similar to each other (e.g., cells of the same cell type) tend 
+to be placed close together in the low-dimensional representation, whereas 
+larger distances are potentially less faithfully represented. PCA, on the other 
+hand, tends to put more focus on preserving the large cell-to-cell distances. 
+Importantly, even though PCA is rarely used for visualization of large scRNA-seq 
+data sets in two-dimensional plots, it is often used as a first dimension 
+reduction step, and other approaches such as tSNE and UMAP are subsequently 
+applied to the PCA output. 
+
+Here, we therefore first apply PCA to our data set. We supply the set of 
+highly variable genes derived above, to only calculate the principal components 
+based on these. By default, the `runPCA` function from the
+`r Biocpkg("scater")` package will apply the PCA to the 'logcounts' assay. 
+We plot the first two principal components (note that we extract 50 components,
+which will be used as the basis for the tSNE later) and color by the number of 
+detected genes.
+
+```{r}
+sce <- runPCA(sce, exprs_values = "logcounts", ncomponents = 50, 
+              subset_row = metadata(sce)$hvgs)
+sce
+reducedDimNames(sce)
+plotReducedDim(sce, "PCA", colour_by = "detected")
+```
+
+Next, we apply tSNE, which is a *non-linear*, *stochastic*  dimension 
+reduction technique that attempts to find a mapping of the data on a low 
+subspace while preserving local distances between cells. The non-linear 
+character of tSNE means that it will often produce projections that better 
+resolve differences between cell groups. The better separation of tSNE comes 
+at the cost of interpretability; while in a tSNE representation similar cells 
+are placed close to each other, longer distances in the representation 
+*are not guaranteed* to reflect true relationships. This means that it is 
+risky to draw conclusions of "similarity" or "dissimilarity" from the positional
+relationships of different cell groupings that appear in a tSNE plot. In addition, 
+the stochastic nature of tSNE means that every time the algorithm is applied a 
+different representation will be produced *unlesss a random seed is set*. 
+
+```{r}
+set.seed(123)
+sce <- runTSNE(sce, dimred = "PCA")
+reducedDimNames(sce)
+plotReducedDim(sce, "TSNE", colour_by = "detected")
+```
+
+We can often identify specific cell types and gain some understanding of the 
+data directly from the visualization. Typically, 
+this would be done by colouring the cells according to the expression level of
+known marker genes for certain cell types.
+
+```{r}
+## Color by expression of a B-cell marker (CD20)
+plotReducedDim(sce, "TSNE", colour_by = "MS4A1")
+## Color by expression of a T-cell marker
+plotReducedDim(sce, "TSNE", colour_by = "CD3D")
+## Color by expression of a monocyte marker
+plotReducedDim(sce, "TSNE", colour_by = "LYZ")
+## Color by expression of a platelet marker
+plotReducedDim(sce, "TSNE", colour_by = "PPBP")
+```
+
+
+# Interactive exploratory analysis
+
+As we have seen previously, exploratory analysis is very important for 
+high-throughput data analysis. Performing this in an interactive way, rather 
+than via static QC plots, can often be more efficient. Within the Bioconductor 
+framework, one way to do this is via the `r Biocpkg("iSEE")` package, which 
+directly takes a *SummarizedExperiment* (or a derivative such as a 
+*SingleCellExperiment*) object as input.
+
+```{r, eval = FALSE, warning = FALSE}
+library(iSEE)
+iSEE(sce)
+```
+
+
+# Clustering
+
+There is a plethora of methods available for clustering scRNA-seq data (see 
+e.g. @Duo2018-clustering for a comparison). So called graph-based clustering methods 
+are commonly used and often provide good results, and we will illustrate here 
+how they can be applied. 
+
+## With scran + igraph
+
+First, we will use `r Biocpkg("scran")` to generate the shared nearest neighbor
+graph, which will then be subjected to community detection using algorithms
+implemented in the `r CRANpkg("igraph")` package. The SNN graph is constructed
+using the `buildSNNGraph` function in `r Biocpkg("scran")`, given the input
+space to use (here, we use the PCA representation calculated above) and the
+number of neighbors to use in the original KNN graph generation. We also specify
+the type of weighting to use when generating the SNN graph. The default is `type
+= "rank"`, which sets the weight between two nodes to _k - r/2_, where _r_ is
+the smallest sum of ranks for any shared neighbors [@Xu2015-rw]. Alternatively,
+`type = "number"` sets the weight to the number of shared neighbors.
+
+```{r}
+graph_k10 <- scran::buildSNNGraph(sce, k = 10, use.dimred = "PCA", type = "rank")
+```
+
+Once the SNN graph is generated, we can use any of the community detection
+algorithms in `r CRANpkg("igraph")` to find the clusters. Here, we illustrate
+two of these methods; the walktrap algorithm [@Pons2005-sh] and the Louvain
+method [@Blondel2008-ym]. The cluster assignments are included in the
+`membership` slot of the `communities` object returned by the community
+detection.
+
+```{r}
+clust_k10_walktrap <- igraph::cluster_walktrap(graph_k10)$membership
+clust_k10_louvain <- igraph::cluster_louvain(graph_k10)$membership
+```
+
+There are several ways in which we can explore the clustering results further.
+For example, we can look at the number of inferred communities, and the number
+of cells assigned to each of them:
+
+```{r}
+table(clust_k10_walktrap)
+table(clust_k10_louvain)
+```
+
+We can also compare the assignments between the two community detection methods,
+both numerically and graphically. A common metric for summarizing the agreement
+between two partitionings of the same set of cells is the _adjusted Rand index_
+[@Rand1971-ty; @Hubert1985-id] - the closer to 1 this value is, the more similar 
+are the partitionings.
+
+```{r}
+table(clust_k10_walktrap, clust_k10_louvain)
+pheatmap::pheatmap(table(clust_k10_walktrap, clust_k10_louvain))
+mclust::adjustedRandIndex(clust_k10_walktrap, clust_k10_louvain)
+```
+
+Finally, we often want to overlay the cluster assignments in a reduced dimension
+representation, or in the original graph. One way of achieving the former is to
+add the cluster labels to the _SingleCellExperiment_ object, and use the
+`plotReducedDim` function from `r Biocpkg("scater")` to visualize the data. The
+latter can be achieved using functions from `r CRANpkg("igraph")`.
+
+```{r, fig.width = 7}
+## Add cluster assignments to the SingleCellExperiment object and visualize in
+## tSNE representation
+sce$cluster_walktrap_k10 <- factor(clust_k10_walktrap)
+sce$cluster_louvain_k10 <- factor(clust_k10_louvain)
+scater::plotReducedDim(sce, "TSNE", colour_by = "cluster_walktrap_k10")
+scater::plotReducedDim(sce, "TSNE", colour_by = "cluster_louvain_k10")
+```
+
+## With Seurat
+
+`r CRANpkg("Seurat")` also implements a graph-based clustering, by default using
+the Louvain community detection algorithm. Since `r CRANpkg("Seurat")` does not
+use the _SingleCellExperiment_ container, the first thing we need to do is to
+create a Seurat object for the downstream analysis. 
+Next, we create the nearest neighbor graph, and find the communities. Note that
+`r CRANpkg("Seurat")` allows the specification of the resolution parameter. This
+will (implicitly) determine the number of communities.
+Here, we specify a range of resolutions, which will generate a
+collection of clustering results.
+Finally, we can move the cluster labels back into the original
+SingleCellExperiment object, for further exploration (which can of course also
+be done using functions from `r CRANpkg("Seurat")`).
+
+```{r, message = FALSE}
+so <- Seurat::as.Seurat(sce, counts = "counts", data = "logcounts")
+so <- Seurat::FindNeighbors(so, reduction = "PCA", k.param = 20,
+                            dim = seq_len(ncol(reducedDim(sce, "PCA"))))
+so <- Seurat::FindClusters(so, random.seed = 123, verbose = FALSE,
+                           resolution = c(0.05, 0.1, 0.2, 0.4, 0.6, 1.0))
+
+library(dplyr)
+stopifnot(all(rownames(so@meta.data) == rownames(colData(sce))))
+colData(sce) <- cbind(colData(sce), 
+                      so@meta.data %>% dplyr::select(contains("snn_res")))
+```
+
+
+# Differential expression analysis - marker gene detection
+
+First, a cautionary note: some care should be taken when interpreting the
+p-values from *any* statistical test applied in this context, since the testing is
+performed on the _same_ data that is used to extract the clusters in the first
+place. Thus, almost by construction, there will be some genes that are
+differentially expressed between the different clusters.
+
+# Pairwise t-tests with scran
+
+The t-test is a natural choice for comparing observed expression levels in two
+groups (e.g., clusters). It has been shown to be competitive also in terms of
+performance on various types of scRNA-seq data [@Soneson2018-hg]. 
+
+The `r Biocpkg("scran")` package contains a function named `pairwiseTTests`,
+which will, as the name suggests, perform a t-test between each pair of
+clusters. The input is a matrix of normalized, log-transformed expression
+values, and a vector of cluster labels. The output of this function call is a
+list with two elements: `statistics` and `pairs`. Each element of `statistics`
+is a *DataFrame* giving the results of the applied test for a given pair of
+clusters (the corresponding pair is obtained from the `pairs` object). The
+`direction` argument specifies whether we are interested in genes regulated in
+any direction, or only up- or down-regulated genes, respectively.
+
+```{r}
+pwtt <- scran::pairwiseTTests(
+    x = logcounts(sce), groups = sce$cluster_louvain_k10, 
+    direction = "up"
+)
+names(pwtt)
+length(pwtt$statistics)  ## number of pairs
+head(pwtt$statistics[[1]])  ## results from first pairwise test
+head(pwtt$pairs)  ## clusters compared in each pair
+```
+
+While the `pairwiseTTests` function (and the similar `pairwiseWilcox` function
+for the Wilcoxon test) provides a very convenient and efficient way of
+performing all pairwise comparisons, in practice we often want to summarize or
+combine the results across several of these comparisons. For example, 
+we may be interested in finding genes that are
+upregulated in a specific cluster compared to _each_ of the other clusters, or
+compared to _at least one_ of them. The function `combineMarkers` from 
+`r Biocpkg("scran")` was written for this purpose, and allows the user to combine
+the list of pairwise results in several ways. For example, in order to test, for
+each cluster, whether each gene is significantly upregulated with respect to
+_all_ other clusters, we can do:
+
+```{r}
+cbm_all <- scran::combineMarkers(
+    de.lists = pwtt$statistics, pairs = pwtt$pairs,
+    pval.type = "all"
+)
+```
+
+The result of this function call is a list, containing one *DataFrame* for each
+original cluster. This *DataFrame* contains, in addition to the logFCs compared
+to each of the other clusters, a nominal and an adjusted p-value testing the
+hypothesis that the gene is not DE in all the contrasts involving the cluster of
+interest. Thus, the top-ranked markers for a given cluster can be seen as
+"specific" marker genes for that cluster.
+
+It is often helpful from an interpretation point of view to explore the detected
+marker genes visually. `r Biocpkg("scater")` contains many useful functions for
+creating such static plots, and other packages like `r Biocpkg("iSEE")` can be
+used for interactive exploration. Here, we illustrate how to show the expression
+of marker genes across cells in the various clusters, as well as on top of a
+reduced dimension representation. We also make a heatmap showing the expression
+levels of the top two marker genes for each cluster.
+
+```{r, fig.width = 8}
+head(cbm_all[["2"]])
+scater::plotExpression(sce, features = c("CD79A", "MS4A1"), 
+                       x = "cluster_louvain_k10")
+cowplot::plot_grid(scater::plotTSNE(sce, colour_by = "CD79A"),
+                   scater::plotTSNE(sce, colour_by = "MS4A1"))
+scater::plotHeatmap(sce, features = unique(unlist(lapply(cbm_all, function(w) rownames(w)[1:2]))),
+                    columns = colnames(sce)[order(sce$cluster_louvain_k10)],
+                    colour_columns_by = "cluster_louvain_k10", cluster_cols = FALSE,
+                    show_colnames = FALSE, cluster_rows = FALSE)
+```
+
+It is worth pointing out that in practice, we do not need to go through the two
+individual steps above (first doing all pairwise tests, and then combining the
+results). The `findMarkers` function from `r Biocpkg("scran")` will do this for
+us, given a specification of how we wish to combine the results across
+contrasts. To illustrate this, we instead search for genes that are upregulated
+in a cluster compared to _any_ of the other clusters (i.e., testing the null
+hypothesis that the gene is not DE in any of the contrasts).
+
+```{r}
+cbm_any <- scran::findMarkers(
+    sce, groups = sce$cluster_louvain_k10, 
+    pval.type = "any", direction = "up"
+)
+```
+
+Again, the output of the above command is a list of *DataFrames*, one for each
+cluster. Each *DataFrame* contains the logFC with respect to each other cluster,
+and a nominal and an adjusted p-value. There is also a column named `Top`, which
+gives the minimum rank for the gene across all pairwise comparisons. For
+example, if `Top` = 1, the gene is the top-ranked one in at least one comparison
+of the cluster of interest to the other clusters.
+
+To illustrate the difference between the two types of tests, we plot the
+p-values obtained when comparing cluster 2 to the other clusters with the two
+approaches.
+
+```{r}
+## p-values for the pval.type = "all" comparison
+df_all <- as.data.frame(cbm_all[["2"]]) %>% 
+    tibble::rownames_to_column("gene") %>% 
+    dplyr::select(gene, p.value) %>% 
+    setNames(c("gene", "p.value.all"))
+
+## p-values for the pval.type = "any" comparison
+df_any <- as.data.frame(cbm_any[["2"]]) %>% 
+    tibble::rownames_to_column("gene") %>%
+    dplyr::select(gene, p.value) %>%
+    setNames(c("gene", "p.value.any"))
+
+## Merge and plot
+df <- dplyr::inner_join(df_all, df_any, by = "gene")
+ggplot(df, aes(x = p.value.all, y = p.value.any)) + 
+    geom_point() + scale_x_log10() + scale_y_log10() + 
+    theme_bw()
+```
+
+We see that while there are several genes that are strongly significant in both
+types of analyses, there are other genes that are only strongly significant with
+`pval.type = "any"`. We look at one of the genes that are among the top-ranked
+ones in both types of comparisons, and one of the genes that is top-ranked only
+in the `"any"` approach.
+
+```{r}
+genes <- c("CD79A", "RPS16")
+subset(df, gene %in% genes)
+scater::plotExpression(sce, features = genes, x = "cluster_louvain_k10")
+```
+
+Note the difference between a gene that is upregulated in cluster 2 compared to
+_all_ other clusters, and one that is upregulated to _at least one_ other
+cluster.
+
+While `pval.type = "all"` will, as just illustrated, allow us to detect marker
+genes that are specific to a given cluster, there are important pitfalls to be
+aware of. In order to illustrate one of these, we artifically split the cells in
+cluster 2 into two clusters (call one of the groups "2b"), and redo the test to
+find genes that are upregulated in cluster 2 compared to _all_ other clusters.
+
+```{r}
+tmp <- as.character(sce$cluster_louvain_k10)
+set.seed(123)
+tmp[sample(which(tmp == "2"), sum(tmp == "2")/2)] <- "2b"
+sce$cluster_louvain_k10_mod <- factor(tmp)
+cbm_all_mod <- scran::findMarkers(
+    sce, groups = sce$cluster_louvain_k10_mod,
+    pval.type = "all"
+)
+cbm_all_mod[["2"]]["CD79A", ]
+scater::plotExpression(sce, features = "CD79A", x = "cluster_louvain_k10_mod")
+```
+
+Note that now, the gene that was strongly upregulated in cluster 2 compared to
+_all_ other clusters before, is no longer so, since it is expressed also in
+cluster 2b. This is important to consider in cases where the data may be
+overclustered, and thus there may be several clusters corresponding to the same
+underlying cell type. This could also happen, for example, if clusters 2 and 2b
+were different types of T-cells - no general T-cell markers would be upregulated
+in any of these clusters compared to _all_ the other clusters.
+
+Note that the `findMarkers` function provides an interface to several 
+different types of tests. 
+In addition to the default t-test, it is possible to perform Wilcoxon tests or
+binomial tests (testing for differences in the presence/absence pattern of genes
+between clusters) using the same interface, by specifying the `test` argument.
+
+In the presence of strong batch effects (e.g., when cells come from different
+studies or are prepared in multiple batches), these should be accounted for in
+the differential expression analysis. One way of doing this is to use the
+`block` argument of `findMarkers`, which effectively performs the cluster
+comparisons in each batch, and subsequently combines the results into a single
+p-value.
+
+# Cell type prediction
+
+Cell type prediction methods attempt to assign a cell type label to each cell 
+in a data set based on its similarity to cells of the same type in a labeled
+reference data set. Here, we will illustrate how to perform such an analysis 
+using the `r Biocpkg("SingleR")` package. 
+
+```{r, fig.width = 7}
+## Load reference dataset
+library(celldex)
+library(SingleR)
+ref <- celldex::MonacoImmuneData()
+
+## Predict labels
+pred <- SingleR::SingleR(test = sce, ref = ref, labels = ref$label.main)
+table(pred$labels)
+
+## Add assigned labels to original object
+sce$singler_labels <- pred$labels
+sce$singler_pruned_labels <- pred$pruned.labels
+sce$singler_diffscore <- pred$tuning.scores$first - pred$tuning.scores$second
+sce
+
+## Plot association with cluster labels
+library(pheatmap)
+table(sce$singler_pruned_labels, sce$cluster_walktrap_k10, useNA = "ifany")
+pheatmap(table(sce$singler_pruned_labels, sce$cluster_walktrap_k10,
+               useNA = "ifany"))
+plotReducedDim(sce, "TSNE", colour_by = "singler_pruned_labels")
+```
+
+
+# Other frameworks
+
+In this tutorial we have used Bioconductor packages for the analysis, and 
+represented the data in a *SingleCellExperiment* container. Just as for 
+bulk RNA-seq, there are also other containers that are often used for 
+single-cell data. The most common alternative is the Seurat object, 
+which is the basis for the workflow provided by the `r CRANpkg("Seurat")` package. 
+This package provides to a large extent similar capabilities as the 
+Bioconductor packages we have seen in this lecture, and can be used as an 
+alternative. The [webpage](https://satijalab.org/seurat/articles/get_started.html) 
+contains a collection of tutorials (including one for the 
+[same data set](https://satijalab.org/seurat/articles/pbmc3k_tutorial.html) 
+that we studied here). 
+
+
+# Session information {-}
+
+```{r}
+sessionInfo()
+```
+
+# References {-}
