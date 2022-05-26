@@ -180,9 +180,9 @@ st
 We see that *tximeta* has identified the transcriptome used for the 
 quantification as `GENCODE - Homo sapiens - release 29`. How did this happen?
 In fact, the output directory from *Salmon* contains much more information than 
-just the `quant.sf` file! (this means that it is not advisable to 
-move files out of the folder, or to share only the `quant.sf` file, since 
-the context is lost):
+just the `quant.sf` file! (as mentioned above, this means that it is not 
+advisable to move files out of the folder, or to share only the `quant.sf` 
+file, since the context is lost):
 
 ```{r listinquants}
 list.files(file.path(dir, "quants", coldata$names[1]), recursive = TRUE)
@@ -351,7 +351,7 @@ In *DESeq2*, the custom class is called *DESeqDataSet*. It is built on top of
 the *SummarizedExperiment* class, and it is easy to convert 
 *SummarizedExperiment* objects into *DESeqDataSet* objects. One of the two main
 differences compared to a *SummarizedExperiment* object is that the `assay` slot
-is instead accessed using the `counts` accessor function, and the *DESeqDataSet*
+can be accessed using the `counts` accessor function, and the *DESeqDataSet*
 class enforces that the values in this matrix are non-negative integers.
 
 A second difference is that the *DESeqDataSet* has an associated *design
@@ -447,9 +447,6 @@ to generate a *DGEList* from the gene-level *SummarizedExperiment* object:
 library(edgeR)
 
 dge <- tximeta::makeDGEList(sg)
-## Add sample information
-stopifnot(rownames(dge$samples) == rownames(colData(sg)))
-dge$samples <- cbind(dge$samples, colData(sg))
 names(dge)
 head(dge$samples)
 ```
