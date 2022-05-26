@@ -320,11 +320,11 @@ To get the right answer, you have to pose the right question.
 
 --
 
-- Does the total output of a gene change between conditions? Differential Gene Expression
+- Does the total output of a gene change between conditions? Differential Gene Expression (DGE)
 
 --
 
-- Does the expression of individual transcripts change? Differential Transcript Expression
+- Does the expression of individual transcripts change? Differential Transcript Expression (DTE)
 
 --
 
@@ -332,7 +332,7 @@ To get the right answer, you have to pose the right question.
 
 --
 
-- Does the isoform composition for a given gene change? Differential Transcript Usage/Differential Exon Usage 
+- Does the isoform composition for a given gene change? Differential Transcript Usage/Differential Exon Usage (DTU/DEU)
 
 --
 
@@ -532,12 +532,13 @@ Fields:
 
 --
 
-Currently (September 2020)
+Currently (May 2022)
 
-- 1903 software packages
-- 962 annotation packages
-- 392 experiment packages
-- 27 workflows
+- 2140 software packages
+- 909 annotation packages
+- 410 experiment packages
+- 29 workflows
+- 8 books
 
 **Aim**: interdisciplinary research, collaboration and rapid development of scientific software
 
@@ -690,8 +691,8 @@ Some recently developed methods:
 
 return...
 
-* Transcript-level counts, often obtained by  “alignment-free” estimation methods  
-* Gene-level counts, obtained by summation of transcript-level counts
+* Transcript-level counts, which can be summed up to get  
+* Gene-level counts
 
 --
 
@@ -713,7 +714,7 @@ On the gene level: combine exons, "ignoring" splice variants
 - Simple, powerful, yet in some cases inaccurate
 - Tools:
   - `htseq-count`, `featureCounts` for estimating expression levels (counts)
-  - `DESeq`, `edgeR`, `DESeq2` for statistical modeling
+  - `edgeR`, `DESeq2`, `voom+limma` for statistical modeling
   
 --
 
@@ -721,8 +722,8 @@ On the transcript level: assign ambiguous reads based on unique ones
     
 - Potentially cleaner, but high degree of uncertainty!
 - Tools: 
-  - `Cufflinks`, `bitSeq`, `RSEM`, `salmon`, `kallisto` for (pseudo)alignment
-  - `DESeq2`, `DRIMseq`, `DEXSeq`, `sleuth` for modeling
+  - `bitSeq`, `RSEM`, `salmon`, `kallisto` for (pseudo)alignment/quantification
+  - `DESeq2`, `edgeR`, `voom+limma`, `swish`, `DRIMseq`, `DEXSeq`, `sleuth` for modeling (depending on the question of interest)
   
 ---
 
@@ -1487,7 +1488,7 @@ class: center
 
 --
 
-`r emo::ji("check")` Efficient methods to process your data (entire workflows available, see e.g. [`https://osca.bioconductor.org/`](https://osca.bioconductor.org/))
+`r emo::ji("check")` Efficient methods to process your data (entire workflows available, see e.g. [the Bioconductor workflow packages](https://www.bioconductor.org/packages/release/BiocViews.html#___Workflow))
 
 --
 
