@@ -43,7 +43,7 @@ suppressPackageStartupMessages({
     library(knitr)
     library(rmarkdown)
 })
-options(width = 100)
+options(width = 80)
 opts_chunk$set(fig.width = 6, fig.height = 6, eval = TRUE)
 ```
 
@@ -176,18 +176,6 @@ st <- tximeta(coldata = coldata, type = "salmon", dropInfReps = TRUE)
 
 st
 ```
-
-(Side note: if you run the code above in Bioc 3.13, you will likely see 
-an error of the form 
-`Error in .order_seqlevels(chrom_sizes[, "chrom"]): !anyNA(m32) is not TRUE`. 
-This is due to an unfortunate timing in the update of UCSC resources 
-with respect to the Bioconductor release schedule, see
-[here](https://github.com/Bioconductor/GenomeInfoDb/issues/30) for more 
-information. Practically, it means that although the data was imported properly, 
-we don't have the automatically associated information about which genome the 
-data correspond to.)
-
-TODO: remove the note above, this should be safe now
 
 We see that *tximeta* has identified the transcriptome used for the 
 quantification as `GENCODE - Homo sapiens - release 29`. How did this happen?
