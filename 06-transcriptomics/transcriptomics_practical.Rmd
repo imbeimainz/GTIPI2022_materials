@@ -563,7 +563,6 @@ remaining dimensions will explain less than the two that we see).
 
 ```{r plotpca, fig.width=6, fig.height=4.5}
 DESeq2::plotPCA(vsd, intgroup = "condition_name")
-
 ```
 
 Additionally, the *pcaExplorer* package has some functionality on top to explore datasets from the point of view of Principal Components - including also a functional interpretation of it with the `pca2go()` function.
@@ -602,8 +601,6 @@ we need to estimate TMM normalization factors before performing further analysis
 plotMDS(dge, top = 500, labels = NULL, 
         col = as.numeric(dge$samples$condition_name), 
         cex = 0.5, gene.selection = "common")
-
-# TODO: is the axis labeling 110% correct? it is MDS "but it says Principal Component"?
 ```
 
 
@@ -882,14 +879,18 @@ edgeR::plotSmear(qlf, de.tags = rownames(tt$table))
 ## Heatmap of the most significant genes
 
 Another way of representing the results of a differential expression analysis is
-to construct a heatmap of the top differentially expressed genes. Here, we would
-expect the contrasted sample groups to cluster separately. A heatmap is a "color
-coded expression matrix", where the rows and columns are clustered using 
-hierarchical clustering. Typically, it should not be applied to counts, but 
-works better with transformed values. Here we show how it can be applied to the 
-variance-stabilized values generated above. We choose the top 30 differentially
-expressed genes. There are many functions in R that can generate heatmaps, here
-we show the one from the `r CRANpkg("pheatmap")` package.
+to construct a heatmap of the top differentially expressed genes. 
+A heatmap is a "color coded expression matrix", where the rows and columns are 
+clustered using hierarchical clustering. Typically, it should not be applied to 
+counts, but works better with transformed values. Here we show how it can be 
+applied to the variance-stabilized values generated above. We would
+expect the contrasted sample groups to cluster separately ("by construction", 
+since the genes were selected to be most discriminative between the groups). 
+The heatmap will allow us to display, e.g., the variability within the groups 
+of the differentially expressed genes. 
+We choose the top 30 differentially expressed genes. There are many functions 
+in R that can generate heatmaps, here we show the one from the 
+`r CRANpkg("pheatmap")` package.
 
 ```{r heatmap, fig.width = 10, fig.height = 10, message=FALSE}
 library(pheatmap)
@@ -902,13 +903,16 @@ df <- as.data.frame(colData(vsd)[, c("condition_name"), drop = FALSE])
 pheatmap(mat, annotation_col = df)
 ```
 
-TODO: adding heatmap with top most variable genes - harp on the idea of variability among groups and variability among replicates
+We can of course also create heatmaps for other sets of genes - for example, 
+the collection of genes with the highest overall variance (which may or may 
+not indicate a difference between the groups - in this particular case most 
+of the highly variable genes show a clear difference between the groups).
 
-```{r}
+```{r heatmap2, fig.width = 10, fig.height = 10, message=FALSE}
 mat <- assay(vsd)
 rownames(mat) <- rowData(vsd)$SYMBOL
 
-topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 30)
+topVarGenes <- head(order(rowVars(mat), decreasing = TRUE), 30)
 
 mat <- mat[topVarGenes, ]
 mat <- mat - rowMeans(mat)
@@ -965,69 +969,43 @@ write.table(cbind(id = rownames(resOrderedDF), resOrderedDF),
 # Functional analysis
 
 In order to interpret the differential expression analysis results in terms 
-of known gene sets, we can also apply a functional enrichment test. To do this, 
-we first need to define the collection of gene sets that we would like to 
-test for enrichment. Here, we use the `r CRANpkg("msigdbr")` package to 
-retrieve all 'biological process' gene sets from the gene ontology. We then 
-use the `camera` method to perform a competitive gene set test for each of these 
-sets. We provide the test statistics from *DESeq2* as the genewise statistics, 
-which will be compared between genes in the gene sets and those outside. 
-
-```{r camera, message = FALSE}
-library(msigdbr)
-genesets <- msigdbr(species = "Homo sapiens", 
-                    category = "C5", subcategory = "BP") %>%
-    dplyr::select(gs_name, ensembl_gene)
-genesets <- as(lapply(split(genesets, f = genesets$gs_name), 
-                      function(w) unique(w$ensembl_gene)),
-               "CharacterList")
-genesets
-camres <- cameraPR(
-    statistic = structure(res$stat, 
-                          names = sub("\\.[0-9]+$", "", rownames(res))),
-    index = ids2indices(as.list(genesets), 
-                        sub("\\.[0-9]+$", "", rownames(res)), 
-                        remove.empty = TRUE),
-    sort = TRUE
-)
-head(camres)
-```
-
-## Streamlining interpretation of results with GeneTonic
-
+of known gene sets, we can also apply a functional enrichment test. 
 There are many alternatives to perform enrichment analysis in the context of R and Bioconductor.
 Among these, *topGO* and *clusterProfiler* are two popular options.
 
-We can perform the analysis by following the instructions in the next chunk
+We can perform the analysis by following the instructions in the next chunk.
+In each case, the gene sets that are tested for enrichment are obtained from the [Gene Ontology](http://geneontology.org/) 'biological process' catalog. 
 
 ```{r}
-library("GeneTonic")
+library(GeneTonic)
 de_symbols_IFNg_vs_naive <- deseqresult2df(res, FDR = 0.05)$symbol
 bg_ids <- rowData(dds)$SYMBOL[rowSums(counts(dds)) > 0]
 
-library("topGO")
+library(topGO)
 topgo_DE_macrophage_IFNg_vs_naive <- pcaExplorer::topGOtable(
-  DEgenes = de_symbols_IFNg_vs_naive,
-  BGgenes = bg_ids,
-  ontology = "BP",
-  mapping = "org.Hs.eg.db",
-  geneID = "symbol",
-  topTablerows = 500
+    DEgenes = de_symbols_IFNg_vs_naive,
+    BGgenes = bg_ids,
+    ontology = "BP",
+    mapping = "org.Hs.eg.db",
+    geneID = "symbol",
+    topTablerows = 500
 )
 
-library("clusterProfiler")
+library(clusterProfiler)
 clupro_DE_macrophage_IFNg_vs_naive <- clusterProfiler::enrichGO(
-  gene = de_symbols_IFNg_vs_naive,
-  universe = bg_ids,
-  keyType = "SYMBOL",
-  OrgDb = org.Hs.eg.db,
-  ont = "BP",
-  pAdjustMethod = "BH",
-  pvalueCutoff = 0.01,
-  qvalueCutoff = 0.05,
-  readable = FALSE
+    gene = de_symbols_IFNg_vs_naive,
+    universe = bg_ids,
+    keyType = "SYMBOL",
+    OrgDb = org.Hs.eg.db,
+    ont = "BP",
+    pAdjustMethod = "BH",
+    pvalueCutoff = 0.01,
+    qvalueCutoff = 0.05,
+    readable = FALSE
 )
 ```
+
+## Streamlining interpretation of results with GeneTonic
 
 "Since it is bioinformatics", every software package can be expected to return a (slightly) different-but-similar-in-content output format.
 To simplify the interpretation of transcriptome datasets, the *GeneTonic* package offers an interactive application to explore in depth all the workflow results.
@@ -1039,16 +1017,16 @@ res_enrich_topGO <- shake_topGOtableResult(topgo_DE_macrophage_IFNg_vs_naive)
 res_enrich_clupro <- shake_enrichResult(clupro_DE_macrophage_IFNg_vs_naive)
 
 gtl_macrophage <- GeneTonicList(
-  dds = dds,
-  res_de = res,
-  res_enrich = res_enrich_clupro,
-  annotation_obj = data.frame(
-    gene_id = rowData(dds)$gene_id,
-    gene_name = rowData(dds)$SYMBOL
-  )
+    dds = dds,
+    res_de = res,
+    res_enrich = res_enrich_clupro,
+    annotation_obj = data.frame(
+        gene_id = rowData(dds)$gene_id,
+        gene_name = rowData(dds)$SYMBOL
+    )
 )
 
-# we can store this object as serialized file to load/share/...
+## we can store this object as serialized file to load/share/...
 saveRDS(gtl_macrophage, "gtl_macrophage.RDS")
 ```
 
@@ -1063,9 +1041,7 @@ GeneTonic()
 ```
 
 
-# Differential transcript expression with swish
-
-TODO: the following can become bonus content? Something to touch upon or not, depending on the time we have left/the status of the students
+# Bonus: Differential transcript expression with swish
 
 Next, we perform a differential transcript expression analysis with 
 `r Biocpkg("swish")`. Note that, as opposed to the workflow above, we will 
@@ -1141,7 +1117,7 @@ plotInfReps(sg_inf, idx = rownames(resOrdered)[1],
             x = "condition_name", cov = "line_id")
 ```
 
-# Differential transcript usage
+# Bonus: Differential transcript usage
 
 Finally, we show how to run differential transcript usage analysis with 
 *swish* and `r Biocpkg("DEXSeq")`. 
@@ -1198,6 +1174,9 @@ plot(rank(dxr[match(shared, dxr$featureID), "pvalue"]),
 ```
 
 # Session information {-}
+
+It is good practice to always include a list of the software versions that were used to perform a given analysis, for reproducibility and trouble-shooting purposes. 
+One way of achieving this is via the `sessionInfo()` function. 
 
 ```{r}
 sessionInfo()
