@@ -44,9 +44,6 @@ xaringanExtra::use_webcam()
 
 ---
 
-
----
-
 # Goals
 
 - understand what single-cell RNA-sequencing is and "can do for you"
@@ -55,7 +52,7 @@ xaringanExtra::use_webcam()
 
 --
 
-Understand general concepts behind their analysis > knowing which tool you should use right now, the field is evolving very fast 
+Understand general concepts behind their analysis > knowing which tool you should use right now, the field is (still) evolving very fast - but some common guidelines seem to have emerged
 
 "Orchestrating Single-Cell Analysis with Bioconductor" is an excellent starting point for many to read about the state of the art in R/Bioconductor + the companion book online
 
@@ -63,7 +60,7 @@ Understand general concepts behind their analysis > knowing which tool you shoul
 
 ### Requirements:
 
-some familiarity with R (and RNA-sequencing) - see the OSCA book for a primer for that as well
+Some familiarity with R (and RNA-sequencing) - see the OSCA book for a primer for that as well
 
 <!-- The goal of this book is to provide a solid foundation in the usage of Bioconductor tools for single-cell RNA-seq analysis by walking through various steps of typical workflows using example datasets. We strive to tackle key concepts covered in the manuscript, “Orchestrating Single-Cell Analysis with Bioconductor”, with each workflow covering these in varying detail, as well as essential preliminaries that are important for following along with the workflows on your own. -->
 
@@ -560,7 +557,7 @@ knitr::include_graphics("images/bioc-figures_v2-03.png")
 
 ???
 
-The SingleCellExperiment class is designed to accomodate all the information produced along a typical single-cell analysis workflow.
+The SingleCellExperiment class is designed to accommodate all the information produced along a typical single-cell analysis workflow.
 
 Those data include raw data:
 
