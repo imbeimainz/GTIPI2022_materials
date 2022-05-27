@@ -145,6 +145,14 @@ https://www.r-graph-gallery.com/
 
 ---
 
+# What a time to be alive...
+
+--
+
+<blockquote class="twitter-tweet"><p lang="de" dir="ltr">1987&#39;s Micrografx Windows Graph designed for Microsoft Windows 1<a href="https://t.co/gznEQwmoOA">https://t.co/gznEQwmoOA</a> <a href="https://t.co/vsfiwaVkhj">pic.twitter.com/vsfiwaVkhj</a></p>&mdash; RJ Andrews (@infowetrust) <a href="https://twitter.com/infowetrust/status/1529581558583422977?ref_src=twsrc%5Etfw">May 25, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> 
+
+---
+
 # Visualizations
 
 A compendium - and some kind of lexicon as well
@@ -430,8 +438,6 @@ Just don't. When gratuitous, just do not do it. Well, unless you are representin
 # Got a nice viz?
 
 Let's try to dissect that
-
-
 
 ---
 
