@@ -4,8 +4,8 @@ title: >
 subtitle: >
   GTIPI SummerSchool
   <p align="center">
-  <a href="https://imbeimainz.github.io/GTIPI2022"><img src="images/gtipi_logo.png" alt="" height="150"/></a>
   </p>
+  <a href="https://imbeimainz.github.io/GTIPI2022"><img src="images/gtipi_logo.png" alt="" height="150"/></a>
 author:
 - name: <a href="https://csoneson.github.io">Charlotte Soneson (charlotte.soneson@fmi.ch)</a><br><a href="https://www.fmi.ch/bioinformatics/">FMI Basel</a><br><a href="https://twitter.com/CSoneson">`r icons::fontawesome('twitter')` `@CSoneson`</a>
 - name: <a href="https://federicomarini.github.io">Federico Marini (marinif@uni-mainz.de)</a><br><a href="https://www.unimedizin-mainz.de/imbei/">IMBEI, University Medical Center Mainz</a><br><a href="https://twitter.com/FedeBioinfo">`r icons::fontawesome('twitter')` `@FedeBioinfo`</a>
@@ -44,7 +44,7 @@ suppressPackageStartupMessages({
     library(knitr)
     library(rmarkdown)
 })
-options(width = 100)
+options(width = 80)
 opts_chunk$set(fig.width = 5, fig.height = 5, eval = TRUE)
 ```
 
