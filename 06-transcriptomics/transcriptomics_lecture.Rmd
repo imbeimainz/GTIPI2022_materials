@@ -129,12 +129,7 @@ Got R/RStudio?
 
 Latest versions highly recommended!
 
-```{r eval = FALSE}
-install.packages("BiocManager")
-BiocManager::install(
-  c("pcaExplorer", "ideal", "GeneTonic"), dependencies = TRUE)
-```
-
+See https://imbeimainz.github.io/GTIPI2022/material.html for details!
 
 ---
 
@@ -416,9 +411,11 @@ Reference genome sequences (in `fasta` format), required for the alignment
 
 --
 
-Think of the alignment as the address of each read in a 3-billion houses street, where the elements along the street can also end up repeating themselves
+Think of the alignment as the address of each read in a 3-billion houses street, where the elements along the street can also end up repeating themselves  
 
 --
+
+#### What's out there?
 
 Ensembl: http://www.ensembl.org/info/data/ftp/index.html
 
@@ -887,13 +884,24 @@ Poisson -> negative binomial, better captures variability across biological repl
 
 Fold changes, relative abundances
 
+.pull-left[
+<img src="images/ratios_ss.png" alt="" height = 250/>
+]
+
+.pull-right[
 Ex: ratio between two Poisson distributed variables
 
 Low: mean = 20 vs mean = 10  
 High: mean = 2000 vs mean = 1000
+]
 
+--
 
+Which one would you trust more? Why?
 
+--
+
+This goes back to having appropriate statistical frameworks that nicely model your datasets (and how these get generated)
 ---
 
 ## Some challenges in RNA-seq data analysis - 2
@@ -998,34 +1006,6 @@ Do not test AND filter on logFC post-hoc!
 
 **Think** of the null you're testing against - $\beta = 0$ by default, useful to adapt if you want to focus on larger effect sizes
 
-
-
-
-
-
-
-
-
----
-
-# "Why do we not just take the ratios?"
-
-Fold changes, relative abundances
-
-Ex: ratio between two Poisson distributed variables
-
-Low: mean = 20 vs mean = 10  
-High: mean = 2000 vs mean = 1000
-
-In both cases, the "fold change" is...
-
---
-
-Which one would you trust more? Why?
-
---
-
-This goes back to having appropriate statistical frameworks that nicely model your datasets (and how these get generated)
 
 ---
 
@@ -1281,24 +1261,6 @@ after constructing and running a differential gene expression analysis...
 
 ---
 
-# Setup for practical sessions
-
-Got R/RStudio?
-
-Latest versions highly recommended!
-
-```{r eval = FALSE}
-install.packages("BiocManager")
-BiocManager::install(
-  c("pcaExplorer", "ideal", "GeneTonic"), dependencies = TRUE)
-```
-
---
-
-### This is where we stopped this morning...
-
----
-
 # What do our results look like?
 
 <p align="center">
@@ -1462,15 +1424,18 @@ The choice of a background matters!
 
 ... with a slight modification of the example above
 
-```{r}
+```{r eval=FALSE}
 deTable_detected <- matrix(
   c(8, 142, 501, 12000),
   nrow = 2,
   dimnames = list(c("DE", "Not_DE"),
                   c("In_gene_set", "Not_in_gene_set")))
 fisher.test(deTable_detected, alternative = "greater")
+```
 
+versus...
 
+```{r eval=FALSE}
 deTable_allgenes <- matrix(
   c(8, 142, 501, 32000),
   nrow = 2,
@@ -1572,24 +1537,6 @@ class: bottom, center
 
 <!-- 4 ingredients  -->
 <!-- (although Germans say all good things are three) -->
-
----
-
-background-image: url("images/marie.png")
-background-size: cover
-background-position: 50% 50%
-class: center, bottom, inverse
-
-# Does the exploration of your data spark joy?
-
----
-
-background-image: url("images/marie.png")
-background-size: cover
-background-position: 50% 50%
-class: center, bottom, inverse
-
-# Does the ~~exploration~~ interpretation of your data spark joy?
 
 ---
 
@@ -1825,185 +1772,6 @@ background-position: 90% 10%
 
 ---
 
-background-image: url("images/marie.png")
-background-size: cover
-background-position: 50% 50%
-class: center, bottom, inverse
-
---
-
-# Does the analysis/exploration/interpretation of your data spark joy?
-
----
-
-
-# Lessons learnt for me (so far)
-
---
-
-**It takes two to tango**
-
---
-
-Results & Interpretation
-
-<!-- The data is **large** ("can't fit in our head") -->
-<!-- - use structures/containers that support alternative (out-of-memory) representations -->
-<!-- Our task is **complex** -->
-<!-- - yet we are curious and stubborn enough that we want to try and understand this -->
-
---
-
-Bioinformatician & Experimental scientist
-
-<!-- The Pro & the Con: **We are not alone**, we work with a variety of experts  -->
-<!-- - mind (and bridge) the gap when **communicating**! -->
-
---
-
-Reproducibility & Interactivity
-
---
-
-### My contributions to the Bioconductor project:
-
-`pcaExplorer` - Exploratory Data Analysis 
-
-`ideal` - Differential Expression analysis 
-
-`GeneTonic` - Interpretation of DE results 
-
-`iSEE` - Exploration of single cell datasets 
-
----
-
-class: center, middle
-
-# Practical session
-
----
-
-# Practical session
-
-I'll code with you!
-
-See `RNAseq-live-code.R` in Dropbox folder: [`https://bit.ly/mscbiomedicine2022rnaseq`](https://bit.ly/mscbiomedicine2022rnaseq)
-
----
-
-# Practical session
-
-~~I'll code with you!~~ I would really love to code with you...
-
-~~See `RNAseq-live-code.R` in Dropbox folder: [`https://bit.ly/mscbiomedicine2022rnaseq`](https://bit.ly/mscbiomedicine2022rnaseq)~~
-
---
-
-~~I code live in an R script locally. I save often.<br>
-This file lives in a directory synced to Dropbox.<br>
-You open the Dropbox file and refresh as needed, in case you got stuck and want to catch up.~~
-
---
-
-~~You can pair up with a neighbour - alternate roles in typing/dictating  
-Quick homework after the break: what is the `airway` dataset about?  
-Pubmed entry: 24926665, Himes et al. - or google on top of this!~~
-
---
-
-### Nope
-
-See the `transcriptomics101_practical_2022.html` file in [`https://bit.ly/mscbiomedicine2022rnaseq`](https://bit.ly/mscbiomedicine2022rnaseq)
-
----
-
-# Working with the `airway` dataset
-
-The `airway` dataset:
-
-- airway smooth muscle cells were treated with dexamethasone, a synthetic glucocorticoid steroid with anti-inflammatory effects (Himes et al. 2014)
-- four primary human airway smooth muscle cell lines were treated with 1 micromolar dexamethasone for 18 hours. For each of the four cell lines, we have a treated and an untreated sample. 
-
-See more: 
-PMID 24926665  
-raw data: GEO GSE52778 - let's browse this together!  
-the `airway` Bioconductor package  
-
-
-<!-- # Performing a full DE analysis -->
-
-<!-- ### Let's get some data -->
-
-<!-- `macrophage` -->
-
-<!-- Some brief intro, following the `usecase_ideal.html` file -->
-
-<!-- + live demo (using the tour!) -->
-
-<!-- You can have the data from this link: -->
-
-<!-- [`http://bit.ly/EKFKdata`](http://bit.ly/EKFKdata) -->
-
-
----
-
-# Running the examples with the packages
-
-```{r, eval=FALSE}
-library("pcaExplorer")
-pcaExplorer()
-# and then, in the app, load the example airway dataset
-```
-
-```{r, eval=FALSE}
-library("ideal")
-ideal()
-# and then, in the app, load the example airway dataset
-```
-
-```{r, eval=FALSE}
-library("GeneTonic")
-example("GeneTonic", ask = FALSE)
-# this loads the macrophage dataset
-# see the GeneTonic vignette for more details on it
-```
-
-
----
-
-### References:
-
-- Marini and Binder (2016) - Development of Applications for Interactive and Reproducible Research: a Case Study (Genomics Computational Biology) [`10.18547/gcb.2017.vol3.iss1.e39`](https://doi.org/10.18547/gcb.2017.vol3.iss1.e39) 
-- Marini and Binder (2019) - pcaExplorer: an R/Bioconductor package for interacting with RNA-seq principal components (BMC Bioinformatics) [`10.1186/s12859-019-2879-1`](https://doi.org/10.1186/s12859-019-2879-1) 
-- Marini, Linke, Binder (2020) - ideal: an R/Bioconductor package for Interactive Differential Expression Analysis (BMC Bioinformatics) [`10.1186/s12859-020-03819-5`](https://doi.org/10.1186/s12859-020-03819-5)
-- Rue-Albrecht, Marini, Soneson, Lun (2018) - iSEE: Interactive SummarizedExperiment Explorer (F1000 Research) [`https://doi.org/10.12688/f1000research.14966.1`](https://doi.org/10.12688/f1000research.14966.1)
-- Marini, Ludt, Linke, Strauch (2021) - GeneTonic: an R/Bioconductor package for streamlining the interpretation of RNA-seq data (BMC Bioinformatics) [`https://doi.org/10.1186/s12859-021-04461-5`](https://doi.org/10.1186/s12859-021-04461-5)
-
----
-
-### References: (cont'd)
-
-- Amezquita, Lun, Becht, Carey, Carpp, Geistlinger, Marini, Rue-Albrecht, Risso, Soneson, Waldron, Pagès, Smith, Huber, Morgan, Gottardo & Hicks (2019) - Orchestrating single-cell analysis with Bioconductor (Nature Methods) [`https://doi.org/10.1038/s41592-019-0654-x`](https://doi.org/10.1038/s41592-019-0654-x)
-- Companion online book: [`https://osca.bioconductor.org/`](https://osca.bioconductor.org/)
-
-### Resources
-
-See the `transcriptomics101_practical_2022.html` for a fully worked out example (in the Dropbox folder).
-
-The whole `rnaseqGene` workflow is detailed here: https://www.bioconductor.org/packages/rnaseqGene/
-
----
-
-class: middle, center
-
-## ... thank you for your attention!
-<code>`r emo::ji("email")` marinif@uni-mainz.de - `r icons::fontawesome('twitter')`</code> [`@FedeBioinfo`](https://twitter.com/FedeBioinfo)
-
-
----
-
----
-
 # Interfaces for RNA-seq
 
 <p align="center">
@@ -2039,7 +1807,6 @@ class: center, bottom, inverse
 
 ---
 
-
 # Lessons learnt for me (so far)
 
 --
@@ -2072,72 +1839,36 @@ _Stop using Excel for performing Bioinformatics data analysis :)_
 
 --
 
-### My contributions to the Bioconductor project:
+**Our contributions to the Bioconductor project:**
 
+.pull-left[
 `pcaExplorer` - Exploratory Data Analysis 
 
 `ideal` - Differential Expression analysis 
 
 `GeneTonic` - Interpretation of DE results 
 
-`iSEE` - Exploration of single cell datasets 
+`iSEE` - Exploration of single cell datasets
+
+...
+]
+.pull-right[
+`countsimQC` - comparing count data sets
+
+`iCOBRA` - calculation and visualization of performance metrics
+
+`ExploreModelMatrix`
+
+`tximeta` - tx importing with metadata, *for free*
+
+`alevinQC`
+]
 
 ---
 
-<!-- class: center, middle -->
+class: center, middle
 
-<!-- # Practical session -->
-
-<!-- -- -->
-
-<!-- I'll code with you!  -->
-
-<!-- See `RNAseq-live-code.R` in Dropbox folder: [`http://bit.ly/mscbiomedicine2020`](http://bit.ly/mscbiomedicine2020) -->
-
-<!-- -- -->
-
-<!-- I code live in an R script locally. I save often.<br> -->
-<!-- This file lives in a directory synced to Dropbox.<br> -->
-<!-- You open the Dropbox file and refresh as needed, in case you got stuck and want to catch up. -->
-
-<!-- -- -->
-
-<!-- You can pair up with a neighbour - alternate roles in typing/dictating -->
-
-<!-- Quick homework after the break: what is the `airway` dataset about? -->
-
-<!-- Pubmed entry: 24926665, Himes et al. - or google on top of this! -->
-
-<!-- --- -->
-
-# Working with the `airway` dataset
-
-The `airway` dataset:
-
-- airway smooth muscle cells were treated with dexamethasone, a synthetic glucocorticoid steroid with anti-inflammatory effects (Himes et al. 2014)
-- four primary human airway smooth muscle cell lines were treated with 1 micromolar dexamethasone for 18 hours. For each of the four cell lines, we have a treated and an untreated sample. 
-
-See more: 
-- PMID 24926665
-- raw data: GEO GSE52778 - let's browse this together!
-- the `airway` Bioconductor package
-
-
-<!-- # Performing a full DE analysis -->
-
-<!-- ### Let's get some data -->
-
-<!-- `macrophage` -->
-
-<!-- Some brief intro, following the `usecase_ideal.html` file -->
-
-<!-- + live demo (using the tour!) -->
-
-<!-- You can have the data from this link: -->
-
-<!-- [`http://bit.ly/EKFKdata`](http://bit.ly/EKFKdata) -->
-
-
+# Practical session
 
 ---
 
@@ -2147,14 +1878,21 @@ class: middle
 
 - Marini and Binder (2016) - Development of Applications for Interactive and Reproducible Research: a Case Study (Genomics Computational Biology) [`10.18547/gcb.2017.vol3.iss1.e39`](https://doi.org/10.18547/gcb.2017.vol3.iss1.e39) 
 - Marini and Binder (2019) - pcaExplorer: an R/Bioconductor package for interacting with RNA-seq principal components (BMC Bioinformatics) [`10.1186/s12859-019-2879-1`](https://doi.org/10.1186/s12859-019-2879-1) 
-- Marini, Linke, Binder (2020) - ideal: an R/Bioconductor package for Interactive Differential Expression Analysis (bioRxiv) [`10.1101/2020.01.10.901652`](https://doi.org/10.1101/2020.01.10.901652)
+- Marini, Linke, Binder (2020) - ideal: an R/Bioconductor package for Interactive Differential Expression Analysis (BMC Bioinformatics) [`10.1186/s12859-020-03819-5`](https://doi.org/10.1186/s12859-020-03819-5)
 - Rue-Albrecht, Marini, Soneson, Lun (2018) - iSEE: Interactive SummarizedExperiment Explorer (F1000 Research) [`https://doi.org/10.12688/f1000research.14966.1`](https://doi.org/10.12688/f1000research.14966.1)
+- Marini, Ludt, Linke, Strauch (2021) - GeneTonic: an R/Bioconductor package for streamlining the interpretation of RNA-seq data (BMC Bioinformatics) [`https://doi.org/10.1186/s12859-021-04461-5`](https://doi.org/10.1186/s12859-021-04461-5)
+- Ludt, Ustjanzew, Binder, Strauch, Marini (2022) - Interactive and Reproducible Workflows for Exploring and Modeling RNA-seq Data with pcaExplorer, Ideal, and GeneTonic (Current Protocols) [`https://doi.org/10.1002/cpz1.411`](https://doi.org/10.1002/cpz1.411)
+
+---
+
+### References: (cont'd)
+
 - Amezquita, Lun, Becht, Carey, Carpp, Geistlinger, Marini, Rue-Albrecht, Risso, Soneson, Waldron, Pagès, Smith, Huber, Morgan, Gottardo & Hicks (2019) - Orchestrating single-cell analysis with Bioconductor (Nature Methods) [`https://doi.org/10.1038/s41592-019-0654-x`](https://doi.org/10.1038/s41592-019-0654-x)
 - Companion online book: [`https://osca.bioconductor.org/`](https://osca.bioconductor.org/)
 
 ### Resources
 
-https://www.bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html
+The whole `rnaseqGene` workflow is detailed here: https://www.bioconductor.org/packages/rnaseqGene/
 
 ---
 
