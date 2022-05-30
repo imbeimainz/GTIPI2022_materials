@@ -917,15 +917,37 @@ For both, as $\lambda$ increases, variance decreases and bias increases
 
 ![FSS_Algo](images/CV_lam.png)
 
-     
-      
-      
-      
-      
- ---
+---
 class: inverse, center, middle
 
 # How to extract essential information from data: Principal component analysis
+
+---
+# PCA
+## Aim: Dimension reduction
+
+* Reduce a two-variable scatterplot to a single coordinate (Karl Pearson 1901)
+
+* Summarize a battery of psychological tests run on the same subjects - provide overall scores (Hotelling 1933)
+
+* PCA is an exploratory technique to show relations between variables
+
+* PCA is called an unsupervised learning technique
+
+  + all variables have same status
+  
+  + no distinction between dependent and independent variables
+
+---
+# PCA
+## Aim: Dimension reduction
+
+* Project points in high-dimensional space  to lower dimensions ("hyperplanes")
+  + $i$-th principal component is the direction of a line that best fits the data while being orthogonal to the first $i − 1$ vectors
+  + best-fitting line minimizes  average squared distance from the points to the line
+  + these directions constitute an orthonormal basis in which different individual dimensions of the data are linearly uncorrelated
+
+* Linear technique, i. e. new variables are linear functions (linear combinations) of the old ones
 
 ---
 # PCA
@@ -979,33 +1001,6 @@ data.frame(scaledTurtles, sex = turtles[, 4]) %>%
     geom_point(aes(color = sex)) + coord_fixed()
 
 ```
----
-# PCA
-## Aim: Dimension reduction
-
-* Reduce a two-variable scatterplot to a single coordinate (Karl Pearson 1901)
-
-* Summarize a battery of psychological tests run on the same subjects - provide overall scores (Hotelling 1933)
-
-* PCA is an exploratory technique to show relations between variables
-
-* PCA is called an unsupervised learning technique
-
-  + all variables have same status
-  
-  + no distinction between dependent and independent variables
-
----
-# PCA
-## Aim: Dimension reduction
-
-* Project points in high-dimensional space  to lower dimensions ("hyperplanes")
-  + $i$-th principal component is the direction of a line that best fits the data while being orthogonal to the first $i − 1$ vectors
-  + best-fitting line minimizes  average squared distance from the points to the line
-  + these directions constitute an orthonormal basis in which different individual dimensions of the data are linearly uncorrelated
-
-* Linear technique, i. e. new variables are linear functions (linear combinations) of the old ones
-
 ---
 # PCA
 ## Summarize two-dimensional data by a line
