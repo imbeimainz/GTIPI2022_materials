@@ -47,9 +47,11 @@ library("ade4")
 
 * Multiple testing
 
+* Linear model selection and regularization or 
+How to obtain parsimonious statistical models
+
 * How to extract essential information from data: PCA
 
-* How to obtain parsimonious statistical models
 
 ---
 class: inverse, center, middle
@@ -413,24 +415,224 @@ ggplot(dplyr::filter(awde, rank <= 5000), aes(x = rank, y = pvalue)) +
   
       - interim analyes
       - group sequential trials
- 
----
+ ---
 class: inverse, center, middle
 
-# Linear model selection and regularization
+# How to extract essential information from data: Principal component analysis
 
 ---
-# Linear regression
-* Linear regression is commonly used to describe the relationship between
+# PCA
+## Example - Turtle data
+* Jolicoeur and Mossiman’s 1960’s Painted Turtles Dataset with size variables for two turtle populations (contained in R package ade4)
+```{r turtles1, include=TRUE, echo = FALSE, results = "asis"}
+data(tortues)
+turtles <- tortues
+names(turtles) <- c("length", "width", "height", "sex")
+turtlem <- as.matrix(turtles[, 1:3])
 
-  + quantitative response $Y$ and
-  
-  + a set of variables $X_1, X_2, \ldots, X_p$
-  
-$Y = \beta_0 + \beta_1 \cdot X_1 + \beta_2 \cdot X_2 + \cdots + \beta_p \cdot X_p + \varepsilon$ 
+kable(head(turtles), format = 'html', caption = paste0("Table ", table.count, ": First lines of turtle data"), align = "c") %>%
+  kable_styling(bootstrap_options = "striped", full_width = T)
+table.count <- table.count + 1   
+```
 
-where 
-$\varepsilon$ is usually assumed to be a normally distributed error: $\varepsilon \sim \mathcal{N}(0, 1)$
+---
+# PCA
+## Example - Turtle data
+.pull-left[
+```{r turtles2, include=TRUE, echo = FALSE, results = "asis"}
+kable(round(apply(turtlem,2,summary), 2), format = 'html', caption = paste0("Table ", table.count, ": Summary statistics on  turtle data"), align = "c") %>%
+  kable_styling(bootstrap_options = "striped", full_width = T)
+
+table.count <- table.count + 1
+```
+]
+
+.pull-right[
+```{r turtles3, include=TRUE, echo = FALSE, results = "asis", out.width = "100%", fig.cap = paste0("Fig. ", fig.count, ":  All pairs of bivariate scatterplots for the three biometric measurements on painted turtles")}
+fig.count <- fig.count + 1
+ggpairs(turtles[, -4], axisLabels = "none")
+```
+
+]
+---
+# PCA
+## Example - Turtle data
+* Data need to be standardized to make variables in a way comparable
+  + center: substract mean - new variables have mean 0
+  + scale: divide by standard deviation - new variables have standard deviation 1
+  
+```{r turtles4, include=TRUE, echo = FALSE, results = "asis", out.width = "45%", fig.cap = paste0("Fig. ", fig.count, ":  Turtles data projected onto the plane defined by the width and height variables: each point colored according to sex")}
+fig.count <- fig.count + 1
+
+# Plot probability distribution and mark rejection
+scaledTurtles <- scale(turtles[, -4])
+
+data.frame(scaledTurtles, sex = turtles[, 4]) %>%
+  ggplot(aes(x = width, y = height, group = sex)) +
+    geom_point(aes(color = sex)) + coord_fixed()
+
+```
+---
+# PCA
+## Aim: Dimension reduction
+
+* Reduce a two-variable scatterplot to a single coordinate (Karl Pearson 1901)
+
+* Summarize a battery of psychological tests run on the same subjects - provide overall scores (Hotelling 1933)
+
+* PCA is an exploratory technique to show relations between variables
+
+* PCA is called an unsupervised learning technique
+
+  + all variables have same status
+  
+  + no distinction between dependent and independent variables
+
+---
+# PCA
+## Aim: Dimension reduction
+
+* Project points in high-dimensional space  to lower dimensions ("hyperplanes")
+  + $i$-th principal component is the direction of a line that best fits the data while being orthogonal to the first $i − 1$ vectors
+  + best-fitting line minimizes  average squared distance from the points to the line
+  + these directions constitute an orthonormal basis in which different individual dimensions of the data are linearly uncorrelated
+
+* Linear technique, i. e. new variables are linear functions (linear combinations) of the old ones
+
+---
+# PCA
+## Summarize two-dimensional data by a line
+* Aim: keep as much information as possible about both variables
+
+* Linear regression of y on x
+
+.pull-left[
+```{r turtles5, include=TRUE, echo = FALSE, results = "asis", out.width = "50%", fig.cap = paste0("Fig. ", fig.count, ":  Regression of width on height")}
+fig.count <- fig.count +1
+
+reg1 = lm(width ~ height, data=data.frame(scaledTurtles))
+a1 = reg1$coefficients[1] # intercept
+b1 = reg1$coefficients[2] # slope
+
+turt_gg <- ggplot(data.frame(scaledTurtles), aes(x = height, y = width)) +
+  geom_point(size = 2, shape = 21)
+
+pline1 = turt_gg + geom_abline(intercept = a1, slope = b1,
+    col = "blue", lwd = 1.5)
+pline1 + geom_segment(aes(xend = height, yend = reg1$fitted),
+    colour = "red", arrow = arrow(length = unit(0.15, "cm")))
+```
+]
+
+.pull-right[
+* Linear regression of x on y
+
+```{r turtles6, include=TRUE, echo = FALSE, results = "asis", out.width = "50%", fig.cap = paste0("Fig. ", fig.count, ":  Regression of height on width")}
+fig.count <- fig.count +1
+
+reg2 = lm(height ~ width, data=data.frame(scaledTurtles))
+a2 = reg2$coefficients[1] # intercept
+b2 = reg2$coefficients[2] # slope
+
+turt_gg <- ggplot(data.frame(scaledTurtles), aes(x = height, y = width)) +
+  geom_point(size = 2, shape = 21)
+
+pline2 = turt_gg + geom_abline(intercept = -a2/b2, slope = 1/b2,
+    col = "darkgreen", lwd = 1.5)
+pline2 + geom_segment(aes(xend=reg2$fitted, yend=width),
+    colour = "orange", arrow = arrow(length = unit(0.15, "cm")))
+```
+]
+---
+#A line that minimizes distances in both directions
+```{r turtles7, include=TRUE, echo = FALSE, results = "asis", out.width = "50%", fig.cap = paste0("Fig. ", fig.count, ":  A line that minimizes distances in both directions - first principal component")}
+fig.count <- fig.count +1
+xy <- scaledTurtles[, c("width", "height")]
+
+svda <- svd(xy)
+
+pc <- xy %*% svda$v[, 1] %*% t(svda$v[, 1])
+bp <- svda$v[2, 1] / svda$v[1, 1]
+ap <- mean(pc[, 2]) - bp * mean(pc[, 1])
+turt_gg + geom_segment(xend = pc[, 1], yend = pc[, 2]) +
+  geom_abline(intercept = ap, slope = bp, col = "purple", lwd = 1.5)
+```
+
+---
+# PCA
+* Minimizing in both horizontal and vertical directions means in fact minimizing the orthogonal projections onto the line from each point.
+
+* Total variability of the points is measured by the sum of squares of the projection of the points onto the center of gravity, i. e. the origin (0,0) - if the data are centered. 
+
+* Total variability = the total variance = inertia of the point cloud. 
+
+* Inertia can be decomposed into 
+  + sum of the squares of the projections onto the line plus 
+  + the variances along that line
+  
+* For a fixed variance, minimizing the projection distances 
+    $\rightarrow$ maximizing the variance along that line
+
+* Often define first principal component as the line with maximum variance
+
+---
+# PCA
+
+* Note, technically, a singular Value decomposition is performed, i. e. we write $m \times n$ data matrix with rank $r$ as
+* $M = U \Sigma V'$ where 
+  + $U$ an $m \times m$ orthonormal matrix
+  + $V'$ an $n \times n$ transposed of an orthonormal matrix $V$
+  + $\Sigma$ an $m \times n$ matrix with rank $r$ of the form
+$\Sigma=\left(\begin{array}{ccc|ccc}\sigma_{1} & & & & \vdots & \\ & \ddots & & \cdots & 0 & \cdots \\ & & \sigma_{r}&  &  \vdots & &\\ \hline & \vdots & & & \vdots & \\ \cdots & 0 & \cdots & \cdots & 0 & \cdots \\ & \vdots & & & \vdots & \end{array}\right)$
+
+        with $\sigma_{1} \geq \cdots \geq \sigma_{r}>0$
+
+
+---
+# Singular value decomposition
+## turtle data
+.pull-left[
+```{r turtles8, include=TRUE, echo = FALSE, results = "asis", out.width = "45%", fig.cap = paste0("Fig. ", fig.count, ":  bla bla")}
+turtles.svd = svd(scaledTurtles)
+
+kable(turtles.svd$d, format = 'html', 
+      caption = paste0("Table ", table.count, ": Diagonal elements 'singular values'"), align = "c") %>%
+  kable_styling(bootstrap_options = "striped", full_width = T)
+table.count <- table.count + 1
+```
+]
+.pull-right[
+```{r turtles8a, include=TRUE, echo = FALSE, results = "asis", out.width = "45%", fig.cap = paste0("Fig. ", fig.count, ":  bla bla")}
+
+kable(turtles.svd$v, format = 'html', 
+      caption = paste0("Table ", table.count, ": Components of V"), align = "c") %>%
+  kable_styling(bootstrap_options = "striped", full_width = T)
+table.count <- table.count + 1
+
+Z_1 = turtles.svd$v[1, 1] * scaledTurtles[, "length"] + turtles.svd$v[2, 1] *  scaledTurtles[, "width"]  + turtles.svd$v[3, 1] *  scaledTurtles[, "height"]
+Z_2 = turtles.svd$v[1, 2] * scaledTurtles[, "length"] + turtles.svd$v[2, 2] *  scaledTurtles[, "width"]  + turtles.svd$v[3, 2] *  scaledTurtles[, "height"]
+Z_3 = turtles.svd$v[1, 3] * scaledTurtles[, "length"] + turtles.svd$v[2, 3] *  scaledTurtles[, "width"]  + turtles.svd$v[3, 3] *  scaledTurtles[, "height"]
+```
+]
+
+---
+# PCA results for turtle data
+
+* First column of turtles.svd$v shows: coefficients for the three variables are practically equal
+
+* These are the coeffcients of the first principal component:
+
+* $Z_1 =$ `r round(turtles.svd$v[1, 1], 3)` $\cdot$ length + `r round(turtles.svd$v[2, 1], 3)` $\cdot$ width  + `r round(turtles.svd$v[3, 1], 3)` $\cdot$ height
+
+* Variance of principal components
+  + $\mbox{var}(Z_1)$ = `r round(var(Z_1), 3)`
+  + $\mbox{var}(Z_2)$ = `r round(var(Z_2), 3)`
+  + $\mbox{var}(Z_3)$ = `r round(var(Z_3), 3)`
+
+---
+# PCA Extensions
+
+See Federico's package `pcaexplorer`
 
 ---
 # References

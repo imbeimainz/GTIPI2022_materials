@@ -44,9 +44,11 @@ class: center, middle, title-slide
 
 * Multiple testing
 
+* Linear model selection and regularization or 
+How to obtain parsimonious statistical models
+
 * How to extract essential information from data: PCA
 
-* How to obtain parsimonious statistical models
 
 ---
 class: inverse, center, middle
@@ -389,24 +391,289 @@ satisfies: `\(p_{(k)} &lt; \varphi k / m\)`
   
       - interim analyes
       - group sequential trials
- 
----
+ ---
 class: inverse, center, middle
 
-# Linear model selection and regularization
+# How to extract essential information from data: Principal component analysis
 
 ---
-# Linear regression
-* Linear regression is commonly used to describe the relationship between
+# PCA
+## Example - Turtle data
+* Jolicoeur and Mossiman’s 1960’s Painted Turtles Dataset with size variables for two turtle populations (contained in R package ade4)
+&lt;table class="table table-striped" style="margin-left: auto; margin-right: auto;"&gt;
+&lt;caption&gt;Table 3: First lines of turtle data&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:center;"&gt; length &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; width &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; height &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; sex &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 93 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 74 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 37 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; M &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 94 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 78 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 35 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; M &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 96 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 80 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 35 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; M &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 101 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 84 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 39 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; M &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 102 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 85 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 38 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; M &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 103 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 81 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 37 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; M &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
 
-  + quantitative response `\(Y\)` and
-  
-  + a set of variables `\(X_1, X_2, \ldots, X_p\)`
-  
-`\(Y = \beta_0 + \beta_1 \cdot X_1 + \beta_2 \cdot X_2 + \cdots + \beta_p \cdot X_p + \varepsilon\)` 
+---
+# PCA
+## Example - Turtle data
+.pull-left[
+&lt;table class="table table-striped" style="margin-left: auto; margin-right: auto;"&gt;
+&lt;caption&gt;Table 4: Summary statistics on  turtle data&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; length &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; width &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; height &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Min. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 93.00 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 74.00 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 35.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 1st Qu. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 106.75 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 86.00 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 40.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Median &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 122.00 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 93.00 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 44.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Mean &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 124.69 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 95.50 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 46.15 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; 3rd Qu. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 136.25 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 102.75 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 51.00 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; Max. &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 177.00 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 132.00 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 67.00 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+]
 
-where 
-`\(\varepsilon\)` is usually assumed to be a normally distributed error `\(\varepsilon \sim \mathcal{N}(0, 1)\)`
+.pull-right[
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="20220530-Introduction-to-Statistics-and-Machine-Learning_files/figure-html/turtles3-1.png" alt="Fig. 6:  All pairs of bivariate scatterplots for the three biometric measurements on painted turtles" width="100%" /&gt;
+&lt;p class="caption"&gt;Fig. 6:  All pairs of bivariate scatterplots for the three biometric measurements on painted turtles&lt;/p&gt;
+&lt;/div&gt;
+
+]
+---
+# PCA
+## Example - Turtle data
+* Data need to be standardized to make variables in a way comparable
+  + center: substract mean - new variables have mean 0
+  + scale: divide by standard deviation - new variables have standard deviation 1
+  
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="20220530-Introduction-to-Statistics-and-Machine-Learning_files/figure-html/turtles4-1.png" alt="Fig. 7:  Turtles data projected onto the plane defined by the width and height variables: each point colored according to sex" width="45%" /&gt;
+&lt;p class="caption"&gt;Fig. 7:  Turtles data projected onto the plane defined by the width and height variables: each point colored according to sex&lt;/p&gt;
+&lt;/div&gt;
+---
+# PCA
+## Aim: Dimension reduction
+
+* Reduce a two-variable scatterplot to a single coordinate (Karl Pearson 1901)
+
+* Summarize a battery of psychological tests run on the same subjects - provide overall scores (Hotelling 1933)
+
+* PCA is an exploratory technique to show relations between variables
+
+* PCA is called an unsupervised learning technique
+
+  + all variables have same status
+  
+  + no distinction between dependent and independent variables
+
+---
+# PCA
+## Aim: Dimension reduction
+
+* Project points in high-dimensional space  to lower dimensions ("hyperplanes")
+  + `\(i\)`-th principal component is the direction of a line that best fits the data while being orthogonal to the first `\(i − 1\)` vectors
+  + best-fitting line minimizes  average squared distance from the points to the line
+  + these directions constitute an orthonormal basis in which different individual dimensions of the data are linearly uncorrelated
+
+* Linear technique, i. e. new variables are linear functions (linear combinations) of the old ones
+
+---
+# PCA
+## Summarize two-dimensional data by a line
+* Aim: keep as much information as possible about both variables
+
+* Linear regression of y on x
+
+.pull-left[
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="20220530-Introduction-to-Statistics-and-Machine-Learning_files/figure-html/turtles5-1.png" alt="Fig. 8:  Regression of width on height" width="50%" /&gt;
+&lt;p class="caption"&gt;Fig. 8:  Regression of width on height&lt;/p&gt;
+&lt;/div&gt;
+]
+
+.pull-right[
+* Linear regression of x on y
+
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="20220530-Introduction-to-Statistics-and-Machine-Learning_files/figure-html/turtles6-1.png" alt="Fig. 9:  Regression of height on width" width="50%" /&gt;
+&lt;p class="caption"&gt;Fig. 9:  Regression of height on width&lt;/p&gt;
+&lt;/div&gt;
+]
+---
+#A line that minimizes distances in both directions
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="20220530-Introduction-to-Statistics-and-Machine-Learning_files/figure-html/turtles7-1.png" alt="Fig. 10:  A line that minimizes distances in both directions - first principal component" width="50%" /&gt;
+&lt;p class="caption"&gt;Fig. 10:  A line that minimizes distances in both directions - first principal component&lt;/p&gt;
+&lt;/div&gt;
+
+---
+# PCA
+* Minimizing in both horizontal and vertical directions means in fact minimizing the orthogonal projections onto the line from each point.
+
+* Total variability of the points is measured by the sum of squares of the projection of the points onto the center of gravity, i. e. the origin (0,0) - if the data are centered. 
+
+* Total variability = the total variance = inertia of the point cloud. 
+
+* Inertia can be decomposed into 
+  + sum of the squares of the projections onto the line plus 
+  + the variances along that line
+  
+* For a fixed variance, minimizing the projection distances 
+    `\(\rightarrow\)` maximizing the variance along that line
+
+* Often define first principal component as the line with maximum variance
+
+---
+# PCA
+
+* Note, technically, a singular Value decomposition is performed, i. e. we write `\(m \times n\)` data matrix with rank `\(r\)` as
+* `\(M = U \Sigma V'\)` where 
+  + `\(U\)` an `\(m \times m\)` orthonormal matrix
+  + `\(V'\)` an `\(n \times n\)` transposed of an orthonormal matrix `\(V\)`
+  + `\(\Sigma\)` an `\(m \times n\)` matrix with rank `\(r\)` of the form
+`\(\Sigma=\left(\begin{array}{ccc|ccc}\sigma_{1} &amp; &amp; &amp; &amp; \vdots &amp; \\ &amp; \ddots &amp; &amp; \cdots &amp; 0 &amp; \cdots \\ &amp; &amp; \sigma_{r}&amp;  &amp;  \vdots &amp; &amp;\\ \hline &amp; \vdots &amp; &amp; &amp; \vdots &amp; \\ \cdots &amp; 0 &amp; \cdots &amp; \cdots &amp; 0 &amp; \cdots \\ &amp; \vdots &amp; &amp; &amp; \vdots &amp; \end{array}\right)\)`
+
+        with `\(\sigma_{1} \geq \cdots \geq \sigma_{r}&gt;0\)`
+
+
+---
+# Singular value decomposition
+## turtle data
+.pull-left[
+&lt;table class="table table-striped" style="margin-left: auto; margin-right: auto;"&gt;
+&lt;caption&gt;Table 5: Diagonal elements 'singular values'&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:center;"&gt; x &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 11.704395 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 1.733125 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 1.001710 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+]
+.pull-right[
+&lt;table class="table table-striped" style="margin-left: auto; margin-right: auto;"&gt;
+&lt;caption&gt;Table 6: Components of V&lt;/caption&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 0.5806536 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -0.2706983 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.7678306 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 0.5780575 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -0.5270479 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -0.6229526 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 0.5733158 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 0.8055699 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; -0.1495531 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+]
+
+---
+# PCA results for turtle data
+
+* First column of turtles.svd$v shows: coefficients for the three variables are practically equal
+
+* These are the coeffcients of the first principal component:
+
+* `\(Z_1 =\)` 0.581 `\(\cdot\)` length + 0.578 `\(\cdot\)` width  + 0.573 `\(\cdot\)` height
+
+* Variance of principal components
+  + `\(\mbox{var}(Z_1)\)` = 2.915
+  + `\(\mbox{var}(Z_2)\)` = 0.064
+  + `\(\mbox{var}(Z_3)\)` = 0.021
+
+---
+# PCA Extensions
+
+See Federico's package `pcaexplorer`
 
 ---
 # References
