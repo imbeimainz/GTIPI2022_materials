@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Introduction to Statistics &amp; Machine Learning</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Irene Schmidtmann (Irene.Schmidtmann@uni-mainz.de)" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+    <script src="libs/kePrint/kePrint.js"></script>
+    <link href="libs/lightable/lightable.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/FMstyles.css" type="text/css" />
+    <link rel="stylesheet" href="css/animate.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, title-slide
+
+.title[
+# Introduction to Statistics &amp; Machine Learning
+]
+.subtitle[
+## GTIPI Summer School
+]
+.author[
+### Irene Schmidtmann (<a href="mailto:Irene.Schmidtmann@uni-mainz.de" class="email">Irene.Schmidtmann@uni-mainz.de</a>)</br>
+]
+.institute[
+### IMBEI - University Medical Center Mainz
+]
+.date[
+### 2022/05/30
+]
+
+---
+
+
+
+
+
+# Topics
+
+* Curse of dimensionality - or a blessing in disguise?
+
+* Multiple testing
+
+* How to extract essential information from data: PCA
+
+* How to obtain parsimonious statistical models
+
+---
+class: inverse, center, middle
+
+# Multiple testing
+
+---
+# Statistical tests - one and many
+## Classical statistical tests
+
+* An example
+
+* Why test hypotheses and what to do with the result?
+
+  + Neyman Pearson paradigm
+
+  + Fisher's approach
+
+## Testing many hypotheses
+
+* Problems encountered when testing more than one hypothesis
+
+* Possible solutions
+
+---
+# Classical statistical tests
+##  Example
+
+* We know that a certain trait *A* is present in 20% of the general population.
+
+* We study a disease *D* possibly related to *A*
+
+* Question: Is *A* more frequent in patients than in the general population?
+
+* Study to answer this question: obtain a sample of patients with disease *D* and determine how often trait *A* is present.
+
+* Compare frequency in patient sample to reference value.
+
+---
+# Classical statistical tests
+##  Example (continued)
+
+* Simulated data for 100 fictious patients with disease D
+&lt;table class="table table-striped" style="float: right; margin-left: 10px;"&gt;
+&lt;caption&gt;Table 1: Frequency of trait&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:center;"&gt; patientTraits &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Freq &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; A &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 30 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; not A &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 70 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+* Statistical model:
+  + Binomial distribution with parameters
+      - `\(n =\)` number of patients (here: `\(n = 100\)`),
+      - `\(p =\)` probability of observing trait *A* 
+  + Random variable `\(K\)` describes number of observed occurences of *A*
+      
+* To answer research question, test hypothesis
+
+  + `\(H_0: p = 0.2\)` against
+  + `\(H_1: p &gt; 0.2\)`
+  
+* Use binomial test to compare observed frequency of trait *A* to reference value
+
+---
+# Classical statistical tests
+##  Example (continued)
+
+
+.pull-left[
+* Determine test statistic `\(T = K\)`
+
+* Reject null hypothesis if `\(T \ge k_0\)` with 
+  + `\(k_0 =\)` critical value, chosen such that `\(P(T \ge k_0) \le \alpha\)` if `\(H_0\)` is true.
+  + `\(\alpha =\)` probability of type I error, i. e. of erroneously rejecting null hypothesis
+
+* Choose `\(\alpha = 0.05\)` `\(\Rightarrow k_0 =\)` 27
+
+* Observed `\(k = 30 \gt k_0=\)` 27 `\(\Rightarrow\)` Reject null hypothesis
+]
+
+.pull-rigth[
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="20220530-Introduction-to-Statistics-and-Machine-Learning_files/figure-html/BinomialTest4-1.png" alt="Fig. 1: Distribution of T given `H_0` with rejection region" width="45%" /&gt;
+&lt;p class="caption"&gt;Fig. 1: Distribution of T given `H_0` with rejection region&lt;/p&gt;
+&lt;/div&gt;
+]
+---
+# Exact Binomial test in R
+## One-sided test
+
+```r
+binom.test(x = numA, n = numPatients, p = 0.2, 
+           alternative = "greater")
+```
+
+```
+## 
+## 	Exact binomial test
+## 
+## data:  numA and numPatients
+## number of successes = 30, number of trials = 100, p-value = 0.01125
+## alternative hypothesis: true probability of success is greater than 0.2
+## 95 percent confidence interval:
+##  0.2249232 1.0000000
+## sample estimates:
+## probability of success 
+##                    0.3
+```
+* p-value: Probability of observing an event at least as extreme as the one actually observed, given the null hypothesis is true.
+
+---
+# Why test hypotheses and what to do with the result?
+## Neyman Pearson paradigm "Hypothesis testing"
+* We need to make a decision, e. g. approve new medication
+
+* originally decision between (just) 2 distributions - simple alternative hypothesis
+
+* in practice usually composite alternative hypothesis
+
+  + set up two statistical hypotheses null hypothesis `\(H_0\)` and alternative hypothesis `\(H_1\)`
+  
+  + decide on `\(\alpha\)` (probability of type I error) and `\(\beta\)` (probability of type II error), necessary sample size follows
+  
+  + if data in rejection region of `\(H_0\)`, accept `\(H_1\)`
+  
+  + otherwise keep `\(H_0\)`
+
+---
+# Why test hypotheses and what to do with the result?
+## Fisher's approach "Significance test"
+* We want to learn from our data
+
+  + require null hypothesis
+  
+  + report exact level of significance (p-value)
+  
+* p-value as measure for credibility of null hypothesis
+
+##  Overall
+* Unresolved dispute over formulations     
+---
+
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="https://imgs.xkcd.com/comics/significant.png" alt="Fig.2: https://imgs.xkcd.com/comics/significant.png" width="28%" /&gt;
+&lt;p class="caption"&gt;Fig.2: https://imgs.xkcd.com/comics/significant.png&lt;/p&gt;
+&lt;/div&gt;
+
+
+---
+# Testing many hypotheses
+## Problems encountered when testing more than one hypothesis
+
+* Increase in type I error 
+
+* Temptations
+  + ... looking for other tests if the first one did not give the desired result
+
+  + ... changing the  hypothesis if the original one did not give the desired result
+  
+  + ... and even worse: HARKing – hypothesizing after the results are known
+
+* Such proceeding violates the rules and underlying assumptions of hypothesis testing.
+
+
+---
+# Testing more than one hypothesis
+Table 2: Types of error in multiple testing. 
+
+
+|Test vs reality | `\(H_0\)` is true | `\(H_0\)` is false | Total   |
+|: --------------|---------------|----------------|---------|
+| Rejected       | `\(V\)`           | `\(S\)`            | `\(R\)`     |
+| Not rejected   | `\(U\)`           | `\(T\)`            | `\(m - R\)` |
+| Total          | `\(m_0\)`         | `\(m - m_0\)`      | `\(m\)`     |
+
+with
+* `\(m\)`: total number of hypotheses
+* `\(m_0\)`: number of true null hypotheses
+* `\(V\)`: number of false positives (a measure of type I error)
+* `\(T\)`: number of false negatives (a measure of type II error)
+* `\(S, U\)`: number of true positives and true negatives
+* `\(R\)`: number of rejections
+
+`\(m\)` is known and `\(R\)` can be observed.
+
+---
+# Family wise error rate
+* Family wise error rate (FWER): is the probability that V&gt;0, i.e. that we 
+reject at least one true null hypothesis, i. e. we produce one or more false 
+positive results.
+
+* If all tests are independent we find
+
+`$$P(V&gt;0) = 1 - P( \mbox{no rejection of any of } m_{0} \mbox{ nulls} ) \\ 
+         = 1 - (1-\alpha)^{m_{0}} \rightarrow 1 \mbox{ as } m_{0} \rightarrow \infty$$`
+         
+* Worst case:  `\(P(V&gt;0) = \min(1, m_{0} \cdot \alpha)\)`
+
+* Serious problem if thousands of genes are to be tested
+
+---
+# Controlling family wise error rate
+## Bonferroni correction
+
+* `\(m_0 &lt; m \Rightarrow\)` we are on the safe side (in terms of type I error) if we choose `\(\alpha = \alpha_{\tiny{\mbox{FWER}}}/m\)`
+
+* Drawback: Required individual `\(\alpha\)`'s become extremely small
+
+    `\(\Rightarrow\)` `\(\beta\)`'s increase, i. e. loss of power even for moderate 
+    number of tested hypotheses `\(m\)`  
+
+---
+# A different concept of error control: false discovery rate (FDR)
+* No longer try to keep the FWER below `\(\alpha\)`', but require a boundary on the
+proportion of erroneously rejected null hypothese
+
+* FDR is the **expected** proportion of type I errors out of the rejections made
+
+* `\(\mathrm{FDR} = \mathrm{E}\left[\frac{V}{\max (R, 1)}\right] = \mathrm{E}\left[\frac{V}{R} \mid R &gt; 0 \right] \cdot P(R &gt; 0)\)`
+
+* FDR = FWER if **all** null hypotheses are true
+
+* As FDR is an expectation (average), individual FDR could be much worse
+
+---
+# How to control false discovery rate
+## Example
+(Taken from Holmes, Huber. Modern statistics for modern biology 6.9)
+* Use RNA-Seq dataset airway
+
+  + contains gene expression measurements (gene-level counts) of four primary human airway smooth 
+  muscle cell lines with and without treatment with dexamethasone
+  
+  + interest is in differential expression
+  
+  + use the DESeq2 method (more later, see alsoe chapter 8 in Modern statistics for modern biology)
+  
+* Obtain large number of p-values
+
+* How to decide which hypotheses should be rejected?
+
+
+---
+# Controlling false discovery rate
+## p-value histogram
+* p-value histogram exhibits mixture composed of two components:
+
+  + p-values resulting from the tests for which the null hypothesis is true.
+
+  + p-values resulting from the tests for which the null hypothesis is false.
+
+* relative size of these two components depends on the fraction of true nulls and true alternatives
+
+  + can often be visually estimated from the histogram
+  
+      - peak near 0 for false null hypotheses
+      
+      - uniform distribution for true null hypotheses
+
+---
+# Controlling false discovery rate
+## p-value histogram
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="20220530-Introduction-to-Statistics-and-Machine-Learning_files/figure-html/pvalueHistogram1-1.png" alt="Fig. 3: p-value histogram for airway data" width="50%" /&gt;
+&lt;p class="caption"&gt;Fig. 3: p-value histogram for airway data&lt;/p&gt;
+&lt;/div&gt;
+
+---
+# Controlling false discovery rate
+## p-value histogram
+
+.pull-left[
+* `\(\alpha = 0.025\)` 
+* Given the observed distribution of p-values, 
+945 of the 33469 p-values are likely to 
+correspond to true null hypotheses
+* There are 4772 p-values `\(&lt; \alpha\)`
+* Estimated proportion of false rejections: 0.198
+]
+
+.pull-right[
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="20220530-Introduction-to-Statistics-and-Machine-Learning_files/figure-html/pvalueHistogram3-1.png" alt="Fig. 4: Visual estimation of the FDR with the p-value histogram." width="100%" /&gt;
+&lt;p class="caption"&gt;Fig. 4: Visual estimation of the FDR with the p-value histogram.&lt;/p&gt;
+&lt;/div&gt;
+]
+---
+# Controlling family false discovery rate
+## Benjamini-Hochberg algorithm
+
+* First, order the p-values in increasing order, `\(p_{(1) \cdots} p_{(m)}\)`
+
+* Then for some choice of `\(\varphi\)` ( target FDR), find the largest value of k that
+satisfies: `\(p_{(k)} &lt; \varphi k / m\)`
+
+* Finally reject the hypotheses `\(1, \ldots, k\)` corresponding to `\(p_{(1) \cdots} p_{(k)}\)`
+
+---
+# Controlling false discovery rate
+## Benjamini-Hochberg algorithm
+
+.pull-left[
+* Choose e. g. `\(\varphi =\)` 0.05
+* Number of rejected null hypotheses: 3467
+* Boundary for p-value: 0.0052
+* For comparison Bonferroni boundary for `\(\alpha =\)` 0.05: 0.00000149
+]
+
+.pull-right[
+&lt;div class="figure" style="text-align: center"&gt;
+&lt;img src="20220530-Introduction-to-Statistics-and-Machine-Learning_files/figure-html/BenjaminiHochberg2-1.png" alt="Fig. 5: Visualization of the Benjamini-Hochberg procedure." width="100%" /&gt;
+&lt;p class="caption"&gt;Fig. 5: Visualization of the Benjamini-Hochberg procedure.&lt;/p&gt;
+&lt;/div&gt;
+]
+
+---
+# Some extensions
+* Take dependence between hypotheses into account
+
+* Weigh p-values
+
+* Sophisticated procedures for moderate number of hypotheses in clinical trials
+  
+  + gate-keeping
+  
+  + repeated significance testing during study 
+  
+      - interim analyes
+      - group sequential trials
+ 
+---
+class: inverse, center, middle
+
+# Linear model selection and regularization
+
+---
+# Linear regression
+* Linear regression is commonly used to describe the relationship between
+
+  + quantitative response `\(Y\)` and
+  
+  + a set of variables `\(X_1, X_2, \ldots, X_p\)`
+  
+`\(Y = \beta_0 + \beta_1 \cdot X_1 + \beta_2 \cdot X_2 + \cdots + \beta_p \cdot X_p + \varepsilon\)` 
+
+where 
+`\(\varepsilon\)` is usually assumed to be a normally distributed error `\(\varepsilon \sim \mathcal{N}(0, 1)\)`
+
+---
+# References
+* Susan Holmes, Wolfgang Huber. Modern Statistics for Modern Biology. Cambridge University Press, 2019. The book is also online: https://www.huber.embl.de/msmb/
+
+* Gareth James, Daniela Witten, Trevor Hastie, Robert Tibshirani. An Introduction to Statistical Learning. Second edition. Springer New York, 2021. PDF (legally) available at https://hastie.su.domains/ISLR2/ISLRv2_website.pdf
+
+* Trevor Hastie, Robert Tibshirani. The Elements of Statistical Learning. pringer New York, 2009 PDF (legally) available at https://web.stanford.edu/~hastie/ElemStatLearn/printings/ESLII_print12_toc.pdf
+
+* Frank E. Harrell. Regression Modeling Strategies. Second edition. Springer Cham 2015.
+
+* https://en.wikipedia.org/wiki/Statistical_hypothesis_testing (especially for a comparison between Fisherian, frequentist (Neyman–Pearson) interpretation)
+
+* https://xkcd.com/882/
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
