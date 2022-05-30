@@ -1114,7 +1114,7 @@ Why bother plotting at all?
 
 <img src="http://spatialanalysis.co.uk/wp-content/uploads/2012/02/bike_ggplot.png" alt="" width="750"/>
 
-http://spatialanalysis.co.uk/2012/02/great-maps-ggplot2/
+https://jcheshire.com/r-spatial-data-hints/great-maps-ggplot2/
 
 
 ## The `plot` function
