@@ -266,7 +266,7 @@ positive results.
 # Controlling family wise error rate
 ## Bonferroni correction
 
-* `\(m_0 &lt; m \Rightarrow\)` we are on the safe side (in terms of type I error) if we choose `\(\alpha = \alpha_{\tiny{\mbox{FWER}}}/m\)`
+* `\(m_0 \le m \Rightarrow\)` we are on the safe side (in terms of type I error) if we choose `\(\alpha = \alpha_{\tiny{\mbox{FWER}}}/m\)`
 
 * Drawback: Required individual `\(\alpha\)`'s become extremely small
 
@@ -275,8 +275,8 @@ positive results.
 
 ---
 # A different concept of error control: false discovery rate (FDR)
-* No longer try to keep the FWER below `\(\alpha\)`', but require a boundary on the
-proportion of erroneously rejected null hypothese
+* No longer try to keep the FWER below `\(\alpha\)`, but require a boundary on the
+proportion of erroneously rejected null hypotheses
 
 * FDR is the **expected** proportion of type I errors out of the rejections made
 
@@ -425,7 +425,7 @@ class: inverse, center, middle
   
 * Model is written as  
 `\(Y = \beta_0 + \beta_1  X_1 + \beta_2 X_2 + \cdots + \beta_p X_p + \varepsilon\)`  
-where `\(\varepsilon\)` is usually assumed to be a normally distributed error: `\(\varepsilon \sim \mathcal{N}(0, 1)\)`
+where `\(\varepsilon\)` is usually assumed to be a normally distributed error: `\(\varepsilon \sim \mathcal{N}(0, \sigma^2)\)`
 
 * Standard method to determine regression coefficients `\(\beta_1 , \beta_2, \ldots, \beta_p\)` 
 by minimizing least squares criterion, i. e. the squared residuals  
@@ -465,7 +465,7 @@ where
   + decreases when variables are added that substantially reduce RSS
   + may increase when decrease due to addes variable is small compared to decrease in numerator
   
-* Other criteria , e. g. AIC, BIC, ... (more details)
+* Other criteria , e. g. AIC, BIC, ... (more details later)
 ---
 
 # Evaluating a linear regression model
@@ -488,7 +488,7 @@ where
 ### Improve Accuracy
 - Least-squares is ideal where `\(n&gt;&gt;p\)`
 - Not as good if `\(n&gt;p\)`
-- Linear equations cannot be solved if `\(n&lt;&lt;p\)`
+- Linear equations cannot be solved if `\(n&lt;p\)`
 
 ### Improve Interpretability
  - Remove irrelevant predictors
@@ -514,11 +514,120 @@ where
 # Subset Selection: Best Subset Selection 
 
 ![BSS_Algo](images/BSS_Algo.png)
-
-
 ---
 
+# Data in regression examples
+* Credit data set from `ISLR2` contains information about credit card holders 
+and credit card debt
+* Response variable is balance (average credit card debt for each individual)
+* Several quantitative predictors:
+  + age
+  + cards (number of credit cards)
+  + education (years of education)
+  + income (in thousands of dollars)
+  + limit (credit limit)
+  + rating (credit rating)
 
+&lt;table class="table table-striped" style="font-size: 10px; margin-left: auto; margin-right: auto;"&gt;
+&lt;caption style="font-size: initial !important;"&gt;Table 3: First lines of Credit data&lt;/caption&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:center;"&gt; Income &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Limit &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Rating &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Cards &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Age &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Education &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Own &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Student &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Married &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Region &lt;/th&gt;
+   &lt;th style="text-align:center;"&gt; Balance &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 14.891 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 3606 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 283 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 34 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 11 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; Yes &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; South &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 333 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 106.025 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 6645 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 483 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 82 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 15 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; Yes &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; Yes &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; Yes &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; West &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 903 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 104.593 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 7075 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 514 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 71 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 11 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; West &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 580 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 148.924 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 9504 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 681 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 3 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 36 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 11 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; Yes &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; West &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 964 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 55.882 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4897 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 357 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 2 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 68 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 16 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; Yes &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; South &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 331 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:center;"&gt; 80.180 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 8047 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 569 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 4 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 77 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 10 &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; No &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; South &lt;/td&gt;
+   &lt;td style="text-align:center;"&gt; 1151 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+---
 
 # Subset Selection: Best Subset Selection 
 
@@ -660,7 +769,7 @@ We wish to choose a model with a low test error.
 # Subset Selection: Optimal Model
  ## Adjusting with Adjusted `\(R^2\)`
 &lt;center&gt;
-`\(Adjusted R^2 = 1 - \frac{RSS/(n-d-1)}{TSS/(n-1)}\)`
+Adjusted `\(R^2 = 1 - \frac{RSS/(n-d-1)}{TSS/(n-1)}\)`
 
 `\(TSS = \sum (y_i − \bar{y})^2\)`
 &lt;/center&gt;
@@ -722,7 +831,7 @@ number of predictors. "
 
 - For both, ridge and lasso, predictors should be standardized, i.e.
   + substract mean
-  + divide by variance
+  + divide by standard deviation
 
 
 ---
@@ -746,11 +855,7 @@ number of predictors. "
 
 # Shrinkage methods: Ridge
 
-&lt;center&gt;
-
 `\(RSS + \lambda \sum_{j=1}^{p} \beta_j^2\)` 
-
-&lt;/center&gt; 
 
 ### Shrinkage penalty
 - Is small when coefficients close to zero
@@ -777,15 +882,23 @@ number of predictors. "
 
 - Unlike least squares, ridge is very scale dependent
 
-- Therefore must standardize coefficients
+- Therefore must standardize predictor variables
 
-- The following formula will ensure all coefficients have a standard deviation of one
+- The following formula will ensure all predictor variables have a standard deviation of one
 
 `\(~\)`
 `\(~\)`
 
 &lt;center&gt;
 `\(\tilde{x}_{i j} = \frac{x_{i j}}{\sqrt{\frac{1}{n} \sum_{i=1}^{n}\left(x_{i j}-\bar{x}_{j}\right)^{2}}}\)`
+
+- And this will also center the variables 
+`\(~\)`
+`\(~\)`
+
+&lt;center&gt;
+`\(\tilde{x}_{i j} = \frac{x_{i j} - \bar{x_i}}{\sqrt{\frac{1}{n} \sum_{i=1}^{n}\left(x_{i j}-\bar{x}_{j}\right)^{2}}}\)`
+
 
 ---
 
@@ -930,7 +1043,7 @@ class: inverse, center, middle
 ## Example - Turtle data
 * Jolicoeur and Mossiman’s 1960’s Painted Turtles Dataset with size variables for two turtle populations (contained in R package ade4)
 &lt;table class="table table-striped" style="margin-left: auto; margin-right: auto;"&gt;
-&lt;caption&gt;Table 3: First lines of turtle data&lt;/caption&gt;
+&lt;caption&gt;Table 4: First lines of turtle data&lt;/caption&gt;
  &lt;thead&gt;
   &lt;tr&gt;
    &lt;th style="text-align:center;"&gt; length &lt;/th&gt;
@@ -984,7 +1097,7 @@ class: inverse, center, middle
 ## Example - Turtle data
 .pull-left[
 &lt;table class="table table-striped" style="margin-left: auto; margin-right: auto;"&gt;
-&lt;caption&gt;Table 4: Summary statistics on  turtle data&lt;/caption&gt;
+&lt;caption&gt;Table 5: Summary statistics on  turtle data&lt;/caption&gt;
  &lt;thead&gt;
   &lt;tr&gt;
    &lt;th style="text-align:left;"&gt;   &lt;/th&gt;
@@ -1058,14 +1171,12 @@ class: inverse, center, middle
 * Aim: keep as much information as possible about both variables
 
 * Linear regression of y on x
-
 .pull-left[
 &lt;div class="figure" style="text-align: center"&gt;
 &lt;img src="20220530-Introduction-to-Statistics-and-Machine-Learning_files/figure-html/turtles5-1.png" alt="Fig. 8:  Regression of width on height" width="50%" /&gt;
 &lt;p class="caption"&gt;Fig. 8:  Regression of width on height&lt;/p&gt;
 &lt;/div&gt;
 ]
-
 .pull-right[
 * Linear regression of x on y
 
@@ -1116,7 +1227,7 @@ class: inverse, center, middle
 ## turtle data
 .pull-left[
 &lt;table class="table table-striped" style="margin-left: auto; margin-right: auto;"&gt;
-&lt;caption&gt;Table 5: Diagonal elements 'singular values'&lt;/caption&gt;
+&lt;caption&gt;Table 6: Diagonal elements 'singular values'&lt;/caption&gt;
  &lt;thead&gt;
   &lt;tr&gt;
    &lt;th style="text-align:center;"&gt; x &lt;/th&gt;
@@ -1137,7 +1248,7 @@ class: inverse, center, middle
 ]
 .pull-right[
 &lt;table class="table table-striped" style="margin-left: auto; margin-right: auto;"&gt;
-&lt;caption&gt;Table 6: Components of V&lt;/caption&gt;
+&lt;caption&gt;Table 7: Components of V&lt;/caption&gt;
 &lt;tbody&gt;
   &lt;tr&gt;
    &lt;td style="text-align:center;"&gt; 0.5806536 &lt;/td&gt;
