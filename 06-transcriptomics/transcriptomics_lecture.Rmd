@@ -114,12 +114,6 @@ How can I create neat visualizations of the data?
 
 
 
---
-
-### Prerequisites
-
-- a basic understanding of R
-
 
 ---
 
@@ -161,9 +155,6 @@ See https://imbeimainz.github.io/GTIPI2022/material.html for details!
 <p align="center">
 <img src="images/gene_structure.png" alt="" height="400"/>
 </p>
-
-- Transcribed form of the DNA
-- Active state of the DNA
 
 ---
 
@@ -236,9 +227,6 @@ A combination of
 
 ... to analyze and interpret the biological data
 
---
-
-Can you mention some applications of these omics datasets?
 
 ---
 
@@ -407,11 +395,11 @@ Quality trimming & filtering (wide range of QC tools available)
 
 # Reference files
 
-Reference genome sequences (in `fasta` format), required for the alignment
+Reference genome sequences (in `fasta` format), required for genome alignment.
 
 --
 
-Think of the alignment as the address of each read in a 3-billion houses street, where the elements along the street can also end up repeating themselves  
+Think of the alignment as the address of each read in a 3-billion houses street, where the elements along the street can also end up repeating themselves.
 
 --
 
@@ -457,11 +445,11 @@ Naming of genes can vary across versions, in some databases!
 
 An example:
 
-[`ftp://ftp.ensembl.org/pub/release-99/fasta/homo_sapiens/dna/`](ftp://ftp.ensembl.org/pub/release-99/fasta/homo_sapiens/dna/)
+[`http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/`](http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/)
 
 ... and one level up...
 
-[`ftp://ftp.ensembl.org/pub/release-99/fasta/homo_sapiens/`](ftp://ftp.ensembl.org/pub/release-99/fasta/homo_sapiens/)
+[`http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/`](http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/)
 
 --
 
@@ -492,7 +480,7 @@ chr1    unknown CDS     3427347 3427466 .       -       2       gene_id "MEGF6";
 p_id "P34437"; transcript_id "NM_001409"; tss_id "TSS31177";
 ```
 
-* One line per feature
+* One line per "feature" (exon, transcript, gene, CDS, 3'UTR, 5'UTR, ...)
 * One feature = 9 columns of data, plus optional track definition lines
 * Essential for releasing annotation information
 
@@ -566,17 +554,24 @@ Turning millions of text lines into properly structured abundance tables
 
 Our aim: we often want to compare abundance (expression) of genes or other features between conditions
 
-Genome vs transcriptome alignment
+Splice-aware genome alignment vs "direct" transcript mapping and quantification
 
-Splice-aware alignment vs "direct" transcript quantification
 
 ---
 
-# The role of annotation
+# Alignment: not just simple mapping
 
 <p align="center">
-<img src="images/genemodel_gviz.png" alt="" height="500"/>
+<img src="images/rnaseq_alignment.png" alt="" height="300"/>
 </p>
+
+--
+
+For RNA-seq data, we need a splice-aware aligner
+
+Common choices:
+- STAR
+- HISAT2
 
 ---
 
@@ -611,27 +606,6 @@ Entries:
     
 ---
 
-# Alignment: not just simple mapping
-
-<p align="center">
-<img src="images/rnaseq_alignment.png" alt="" height="300"/>
-</p>
-
---
-
-- Need reliable gene models
-- No detection of novel genes
-
---
-
-Need a splice-aware aligner
-
-Common choices:
-- STAR
-- HISAT2
-
----
-
 # Before quantification
 
 ... and actually, always: Do visualize your data!
@@ -657,6 +631,14 @@ Gene-level counts, often obtained by  genome alignment + overlap counting
 
 <p align="center">
 <img src="images/ss_igv.png" alt="" height="400"/>
+</p>
+
+---
+
+# The role of annotation
+
+<p align="center">
+<img src="images/genemodel_gviz.png" alt="" height="500"/>
 </p>
 
 ---
@@ -688,8 +670,8 @@ Some recently developed methods:
 
 return...
 
-* Transcript-level counts, which can be summed up to get  
-* Gene-level counts
+* Transcript-level counts and TPM (transcripts-per-million) estimates, which can be summed up to get  
+* Gene-level counts and TPM estimates
 
 --
 
@@ -697,7 +679,7 @@ Pros & cons
 
 - considerably faster than traditional alignment+counting -> allow bootstrapping
 - more highly resolved estimates (transcripts rather than gene) + can be aggregated
-- can use a larger fraction of the reads
+- can use a slightly larger fraction of the reads since multi-mapping reads are not excluded
 - don't return precise alignments (bam files, for e.g. visualization in genome browser)
 
 ---
@@ -706,7 +688,7 @@ Pros & cons
 
 --
 
-On the gene level: combine exons, "ignoring" splice variants
+Based on genome alignment - mainly gene-level quantification: combine exons, "ignoring" splice variants
     
 - Simple, powerful, yet in some cases inaccurate
 - Tools:
@@ -715,9 +697,9 @@ On the gene level: combine exons, "ignoring" splice variants
   
 --
 
-On the transcript level: assign ambiguous reads based on unique ones
+Based on transcriptome mapping - transcript- and gene-level quantification: 'assign' reads (or rather, estimate most likely expression level) based on probabilistic modeling
     
-- Potentially cleaner, but high degree of uncertainty!
+- Potentially cleaner, but high degree of uncertainty on the transcript level!
 - Tools: 
   - `bitSeq`, `RSEM`, `salmon`, `kallisto` for (pseudo)alignment/quantification
   - `DESeq2`, `edgeR`, `voom+limma`, `swish`, `DRIMseq`, `DEXSeq`, `sleuth` for modeling (depending on the question of interest)
@@ -787,6 +769,8 @@ featureCounts(files = bamfiles,
               strandSpecific = 0)
 ```
 
+Directly generates a count matrix in your R session.
+
 ---
 
 # What it would look like - salmon
@@ -797,8 +781,12 @@ Create an index of the transcriptome
 
 ```
 $ salmon index -i my_transcripts.idx \          
-               -t my_transcripts.fasta
+               -t <(cat my_transcripts.fasta my_genome.fasta) \
+               -d chromosome_names.txt
 ```
+
+The genome acts as a 'decoy' sequence, to collect reads truly arising from 
+intronic or intergenic locations. 
 
 ---
 
@@ -832,18 +820,18 @@ $ salmon quant -i my_transcripts.idx -l A \
 ... due to time constraints
 
 <p align="center">
-<img src="images/ss_salmon_quant.png" alt="" height="200"/>
+<img src="images/ss_salmon_quant.png" alt="" height="400"/>
 </p>
 
 ---
 
-# What it would look like - salmon
+# Importing salmon quantifications into R
 
 You can follow (offline) the instructions of the `tximport` package - https://bioconductor.org/packages/tximport/
 
 --
 
-`tximeta`: another precious assistant on the way to be consistent and to keep track of provenance identification
+`tximeta`: another precious assistant on the way to be consistent and to keep track of provenance identification (we'll see it in action during the exercises)
 
 ---
 
@@ -1887,8 +1875,8 @@ class: middle
 
 ### References: (cont'd)
 
-- Amezquita, Lun, Becht, Carey, Carpp, Geistlinger, Marini, Rue-Albrecht, Risso, Soneson, Waldron, Pagès, Smith, Huber, Morgan, Gottardo & Hicks (2019) - Orchestrating single-cell analysis with Bioconductor (Nature Methods) [`https://doi.org/10.1038/s41592-019-0654-x`](https://doi.org/10.1038/s41592-019-0654-x)
-- Companion online book: [`https://osca.bioconductor.org/`](https://osca.bioconductor.org/)
+- Srivastava, Malik, Sarkar, Zakeri, Almodaresi, Soneson, Love, Kingsford, Patro (2020) - Alignment and mapping methodology influence transcript abundance estimation (Genome Biology) [https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02151-8](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02151-8)
+- Conesa, Madrigal, Tarazona, Gomez-Cabrero, Cervera, McPherson, Szcześniak, Gaffney, Elo, Zhang, Mortazavi (2016) - A survey of best practices for RNA-seq data analysis (Genome Biology) [`https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0881-8`](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0881-8)
 
 ### Resources
 
@@ -1900,6 +1888,7 @@ class: middle, center
 
 ## ... thank you for your attention!
 <code>marinif@uni-mainz.de - `r icons::fontawesome('twitter')`</code> [`@FedeBioinfo`](https://twitter.com/FedeBioinfo)
+<code>charlotte.soneson@fmi.ch - `r icons::fontawesome('twitter')`</code> [`@CSoneson`](https://twitter.com/CSoneson)
 
 
 ---
