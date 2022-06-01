@@ -548,6 +548,14 @@ Currently (May 2022)
 
 # Data processing
 
+<p align="center">
+<img src="images/raw_to_proc.jpg" alt="A nice example of going from raw data to some form of processed data - fastq-to-bam" height="500"/>
+</p>
+
+---
+
+# Data processing
+
 Turning millions of text lines into properly structured abundance tables
 
 --
