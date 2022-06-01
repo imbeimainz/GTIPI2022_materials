@@ -1191,6 +1191,13 @@ Diminishing returns in increasing the read depth - go for replicates given a fix
 
 ---
 
+# I am not kidding you
+
+--
+
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">doing bulk sequencing analysis in 2022 <a href="https://t.co/3rcOfjZI01">pic.twitter.com/3rcOfjZI01</a></p>&mdash; Zack Chiang (@z_chiang) <a href="https://twitter.com/z_chiang/status/1531689090956918784?ref_src=twsrc%5Etfw">May 31, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> 
+---
+
 # Practical tips for your (next) RNA-seq dataset
 
 ### Bulk or single cell?
