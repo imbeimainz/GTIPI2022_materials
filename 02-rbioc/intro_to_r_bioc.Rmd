@@ -8,7 +8,8 @@ subtitle: >
   </p>
 author:
 - name: Annekathrin Ludt (anneludt@uni-mainz.de)<br><a href="https://www.unimedizin-mainz.de/imbei/">IMBEI, University Medical Center Mainz</a><br>
-- name: Arsenij Ustjanzew (anneludt@uni-mainz.de)<br><a href="https://www.unimedizin-mainz.de/imbei/">IMBEI, University Medical Center Mainz</a><br>
+- name: Arsenij Ustjanzew (arsenij.ustjanzew@uni-mainz.de)<br><a href="https://www.unimedizin-mainz.de/imbei/">IMBEI, University Medical Center Mainz</a><br>
+- name: Chung Shing Rex Ha (rexha@uni-mainz.de)<br><a href="https://www.unimedizin-mainz.de/imbei/">IMBEI, University Medical Center Mainz</a><br>
 - name: <a href="https://federicomarini.github.io">Federico Marini (marinif@uni-mainz.de)</a><br><a href="https://www.unimedizin-mainz.de/imbei/">IMBEI, University Medical Center Mainz</a><br><a href="https://twitter.com/FedeBioinfo">`r icons::fontawesome('twitter')` `@FedeBioinfo`</a>
 date: "2022/05/30"
 output: 
@@ -1114,7 +1115,7 @@ Why bother plotting at all?
 
 <img src="http://spatialanalysis.co.uk/wp-content/uploads/2012/02/bike_ggplot.png" alt="" width="750"/>
 
-http://spatialanalysis.co.uk/2012/02/great-maps-ggplot2/
+https://jcheshire.com/r-spatial-data-hints/great-maps-ggplot2/
 
 
 ## The `plot` function

@@ -54,7 +54,7 @@ xaringanExtra::use_webcam()
 
 Understand general concepts behind their analysis > knowing which tool you should use right now, the field is (still) evolving very fast - but some common guidelines seem to have emerged
 
-"Orchestrating Single-Cell Analysis with Bioconductor" is an excellent starting point for many to read about the state of the art in R/Bioconductor + the companion book online
+"Orchestrating Single-Cell Analysis with Bioconductor" is an excellent starting point for many to read about the state of the art in R/Bioconductor + the companion book online (https://osca.bioconductor.org/)
 
 --
 
@@ -70,9 +70,24 @@ Some familiarity with R (and RNA-sequencing) - see the OSCA book for a primer fo
 
 # Why single-cell?
 
+--
+
+Think of a _smoothie_ vs _the berries_ - what are you interested into?
+
+--
+
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Here is the transcriptomics insight: the bulk RNA-seq (Fig 1), single-cell RNA-seq (Fig. 2), spatial transcriptomics (Fig. 3), and the original organ (Fig. 4). <br><br>(Feel free to cite with image credit to Bo Xia) <a href="https://t.co/wQLx8PDVFm">pic.twitter.com/wQLx8PDVFm</a></p>&mdash; Bo Xia (@BoXia7) <a href="https://twitter.com/BoXia7/status/1261464021322137600?ref_src=twsrc%5Etfw">May 16, 2020</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> 
+
+---
+
+# Why single-cell?
+
 In single-cell RNA-sequencing (scRNA-seq), the RNA of a single cell is sequenced
 
+--
+
 scRNA-seq allows disentanglement of complex biological systems
+
 
 --
 
@@ -91,7 +106,11 @@ Gene expression data on a single-cell level allows us to answer hypotheses of in
 
 scRNA-seq remains a fast-paced field with continuous active developments
 
-![](images/sc_protocols.jpg)
+--
+
+<p align="center">
+<img src="images/sc_protocols.jpg" alt="" height="400"/>
+</p>
 
 Svensson, 2018 (Nat Protocols)
 
@@ -101,7 +120,10 @@ Svensson, 2018 (Nat Protocols)
 
 scRNA-seq remains a fast-paced field with continuous active developments
 
-![](images/sc_studies.jpg)
+<p align="center">
+<img src="images/sc_studies.jpg" alt="" height="400"/>
+</p>
+
 Svensson, 2019 (bioRxiv)
 
 ---
@@ -110,7 +132,9 @@ Svensson, 2019 (bioRxiv)
 
 "I'm planning my next experiment" - Which one to choose?
 
-![](images/sc_methods.jpg)
+<p align="center">
+<img src="images/sc_methods.jpg" alt="" height="400"/>
+</p>
 
 ---
 
@@ -123,6 +147,8 @@ Svensson, 2019 (bioRxiv)
 Droplet-based protocols are more suited for 
 - Examining the composition of a tissue
 - Identifying novel / rare cell types
+
+--
 
 Plate-based protocols are more suited for
 - Studying a rare cell population with known surface markers (through FACS sorting)
@@ -142,7 +168,9 @@ Quantification differs!
 - Plate-based protocols adopt read counting (like in bulk RNA-seq)
 - droplet-based protocols typically adopt unique molecular identifiers (UMIs) to quantify gene expression
 
-![](images/sc_counting.png)
+<p align="center">
+<img src="images/sc_counting.png" alt="" height="250"/>
+</p>
 
 - Read counts are affected by e.g. gene length, sequencing depth and PCR amplification bias
 - UMIs were introduced to avoid this, however this is only true if every cell is sequenced to saturation
@@ -158,7 +186,9 @@ Quantification differs!
 - (very) sparse matrices!
 - (much) more variable than bulk RNA-seq
 
-![](images/sc_counts.png)
+<p align="center">
+<img src="images/sc_counts.png" alt="" height="300"/>
+</p>
 
 ---
 
@@ -167,7 +197,22 @@ background-size: contain
 background-position: 50% 50%
 class: bottom, center
 
-# An overview of the workflow
+# An overview of the workflow(s)
+
+---
+
+# An overview of the workflow(s)
+
+As of 2022, there are some "overarching" analytic frameworks
+
+* Seurat
+* Scanpy
+* Bioconductor
+
+--
+
+Which one to choose?  
+Possibility to interconvert among formats make the choice less painful
 
 ---
 
@@ -195,7 +240,11 @@ A very good friend of yours: the `scater` package!
 
 # "Same" data, different workflow
 
+--
+
 - Bulk RNA-seq: we typically know which groups we want to compare (e.g., treatment vs. control)
+
+--
 
 - In single-cell RNA-seq, we are often interested in comparing gene expression between different cell types
 
@@ -215,7 +264,11 @@ What's a cell identity anyway? This can be vague, and may include both cell type
 
 # Normalization
 
+--
+
 Systematic differences in sequencing coverage between libraries are often observed in single-cell RNA sequencing data
+
+--
 
 Normalization aims to remove these differences such that they do not interfere with comparisons of the expression profiles between cells
 
@@ -237,7 +290,9 @@ This is different from batch correction (relevant when integrating different sam
 
 # Feature selection
 
-Ahead of us: clustering and dimensionality reduction, comparing cells based on their gene expression profiles
+--
+
+Next tasks: clustering and dimensionality reduction, comparing cells based on their gene expression profiles
 
 Required: aggregating per-gene differences into a single (dis)similarity metric between a pair of cells
 
@@ -253,15 +308,19 @@ Preserve interesting biological structure + reduce the size of the data to impro
 
 --
 
-`modelGeneVar` + `getTopHVGs` 
+`modelGeneVar()` + `getTopHVGs()` 
 
 ---
 
 # Dimensionality reduction
 
+--
+
 - 1 gene vs 1 gene: easy-peasy
 
 - many genes vs many: it can even become untractable!
+
+--
 
 Goal of dimensionality reduction: reduce our G x C matrix to a Q x C matrix, where Q << G, while retaining as much signal in the data as possible
 
@@ -284,6 +343,8 @@ Run PCA + Cluster on the first 10-50 PCs + Visualize the cluster identities on t
 
 # Clustering
 
+--
+
 Different cell identity -> reflected by a different gene expression profile? We can cluster cells to identify cell types
 
 - Goal: group cells together that have similar expression profiles 
@@ -295,11 +356,12 @@ Different cell identity -> reflected by a different gene expression profile? We 
 
 Methods more refined than classical k-means are available: 
 
-- Graph-based methods: cluster cells that are connected together (e.g., using nearest neighbours), e.g. `buildSNNGraph` or Seurat 
+- Graph-based methods: cluster cells that are connected together (e.g., using nearest neighbours), e.g. `buildSNNGraph()` or Seurat (uses Louvain's algorithm behind the scenes)
 - Consensus clustering: cluster cells that are often clustered together over several clustering algorithms (some cells will be unclustered), e.g. RSEC (Risso et al. (2018)) 
 
 --
 
+**Think!**
 What does a clustering algorithm do? What is the truth (e.g. true number of clusters)? Iterative approaches are entirely permissible for data exploration, which constitutes the majority of all scRNA-seq data analyses!
 
 ---
@@ -324,9 +386,11 @@ Option: focus on up-regulated markers (easier to interpret to assign putative id
 
 # Cell type annotation
 
+--
+
 Obtaining clusters of cells: straightforward - determine what biological state is represented by each of those clusters: much more difficult
 
-Aim: bridge the gap between the current dataset and prior biological knowledge
+**Aim**: bridge the gap between the current dataset and prior biological knowledge
 
 --
 
@@ -341,9 +405,22 @@ meaning (labels) to an uncharacterized scRNA-seq dataset (yours)
 
 `SingleR` can have lots of goodies for you, provided a suitable reference exists - It assigns labels to cells based on the reference samples with the highest Spearman rank correlations (kind of a rank-based variant of k-nearest-neighbor classification)
 
+--
+
+Other options: Seurat's reference mapping, label transfer, multi-modal data becomes available
+
+--
+
+**Think!**  
+What can be the key issues here?
+
+<!-- missing cell types, unmatched references, novel cell types, ... -->
+
 ---
 
 # Integrating datasets
+
+--
 
 Batch effects: systematic technical variation in the dataset that are not of interest
 
@@ -359,13 +436,21 @@ Care must be taken to avoid confounding, e.g. do not separate control and treatm
 
 --
 
-MNN correction (Haghverdi 2018) and Seurat's `FindIntegrationAnchors` + `IntegrateData` work reasonably well in many cases
+MNN correction (Haghverdi 2018) and Seurat's `FindIntegrationAnchors` + `IntegrateData` work reasonably well in many cases.  
+If using (extremely) large datasets, Harmony can also be a very valid option.
+
+--
+
+**Think!**  
+How do you know whether the integration was helpful (or deleterious)?
 
 ---
 
 # Comparisons
 
-Aim: discover marker genes that differentiate cell types or biological groups
+--
+
+**Aim**: discover marker genes that differentiate cell types or biological groups
 
 The statistical models used in scRNA-seq typically build on the GLM framework
 
@@ -375,6 +460,8 @@ Differential analyses of multi-condition scRNA-seq experiments, split into two c
 
 - differential expression (DE) - tests for changes in expression between conditions for cells of the same type that are present in both conditions
 - differential abundance (DA) - tests for changes in the composition of cell types (or states, etc.) between conditions
+
+--
 
 DA and DE analyses are simply two different perspectives on the same phenomena - For any comprehensive characterization of differences between populations, consider both analyses!
 
@@ -387,6 +474,8 @@ See the `muscat` package for an excellent implementation
 ---
 
 # Dynamic systems
+
+--
 
 Many biological processes manifest as a dynamical continuum of changes in the cellular state.
 
@@ -601,7 +690,7 @@ That said, it also gives the freedom to define any number custom panel types, bo
 
 # <i class="fas fa-exclamation-triangle"></i> Reinventing the wheel?
 
-<i class="fab fa-github"></i> [`federicomarini/awesome-expression-browser`](https://github.com/federicomarini/awesome-expression-browser)
+<i class="fab fa-github"></i> [`https://github.com/federicomarini/awesome-expression-browser`](https://github.com/federicomarini/awesome-expression-browser)
 
 <!-- approximately >100 entries! and counting-->
 
@@ -654,7 +743,7 @@ In particular:
   + <i class="fab fa-github"></i> [`iSEE/iSEEu`](https://github.com/iSEE/iSEEu) source code for `iSEEu`, containing additional panels and modes for `iSEE`
   + <i class="fab fa-github"></i> [`iSEE/iSEE_custom`](https://github.com/iSEE/iSEE_custom) example of custom panels
   + <i class="fab fa-github"></i> [`iSEE/iSEE_instances`](https://github.com/iSEE/iSEE_instances) gallery of complete analyses on public data
-  + <i class="fab fa-github"></i> [`iSEE/iSEEWorkshop2020`](https://github.com/iSEE/iSEEWorkshop2020) this workshop, expected to contain all information to reproduce the setup & analysis
+  + <i class="fab fa-github"></i> [`iSEE/iSEEWorkshop2020`](https://github.com/iSEE/iSEEWorkshop2020) a fully fledged workshop, expected to contain all information to reproduce the setup & analysis
 
 ???
 
@@ -670,20 +759,21 @@ The growing funtionality of the iSEE package is demonstrated in various places:
 
 ## <i class="fas fa-hand-spock"></i> <i class="fas fa-hand-spock"></i> <i class="fas fa-laptop"></i> Hands-on!
 
-```{r, fig.align='center', echo=FALSE, out.height='300px', out.width='600px'}
+```{r, fig.align='center', echo=FALSE, out.height='200px', out.width='400px'}
 knitr::include_graphics("images/workshop.png")
 ```
 
 --
 
-## Workshop resources
+**Workshop resources**
 
 - [Workshop setup](https://isee.github.io/iSEEWorkshop2020/articles/setup.html),
   or `vignette('setup', 'iSEEWorkshop2020')`
 
 - [Workshop vignette](https://isee.github.io/iSEEWorkshop2020/articles/iSEE-lab.html),
-  or, `vignette('iSEE-lab', 'iSEEWorkshop2020')`
+  or `vignette('iSEE-lab', 'iSEEWorkshop2020')`
 
+- [The iSEE Cookbook Workshop](https://isee.github.io/iSEEWorkshopEuroBioc2020/)
 
 We're going to use portions of that for the practical part.
 
@@ -699,8 +789,6 @@ Generated by: <i class="fab fa-github"></i> [kevinrue/magick-profile](https://gi
 
 .center[`iSEE(sce, voice=TRUE)`]
 
---
-
 <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
   <iframe src="https://www.youtube.com/embed/0crFZLwAJOE?autoplay=0" style="position: absolute; top: 0; left: 0; width: 100%; height: 90%; border:0;" allowfullscreen title="YouTube Video"></iframe>
 </div>
@@ -715,8 +803,6 @@ Here we demonstrate how speech recognition was integrated to support a number of
 # <i class="fas fa-bug"></i> Bugs
 
 .center[`iSEE(sce, bugs=TRUE)`]
-
---
 
 ```{r, fig.align='center', out.width='90%', echo=FALSE}
 knitr::include_graphics("images/iSEE-bug.gif")
