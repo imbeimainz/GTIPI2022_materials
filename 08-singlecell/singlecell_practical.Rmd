@@ -767,16 +767,6 @@ contains a collection of tutorials (including one for the
 [same data set](https://satijalab.org/seurat/articles/pbmc3k_tutorial.html) 
 that we studied here). 
 
-# Bonus content
-
-TODO: Think whether we want to include any of the multi-condition, multi-sample single cell datasets
-
-TODO: this would require some thoughts re: 
-- data integration
-- DE/DA/DS
-
-TODO: or maybe just refer to the OSCA book and the many chapters where this is in very much excellent detail?
-
 # `iSEE` my data
 
 iSEE can offer an extreme variety of plots and visual representations of single cell datasets, especially linking the panels together to perform fine-grained analyses otherwise not possible with "simple static plots".
