@@ -109,12 +109,6 @@ How can I create neat visualizations of the data?
 
 
 
---
-
-### Prerequisites
-
-- a basic understanding of R
-
 
 ---
 
@@ -124,13 +118,7 @@ Got R/RStudio?
 
 Latest versions highly recommended!
 
-
-```r
-install.packages("BiocManager")
-BiocManager::install(
-  c("pcaExplorer", "ideal", "GeneTonic"), dependencies = TRUE)
-```
-
+See https://imbeimainz.github.io/GTIPI2022/material.html for details!
 
 ---
 
@@ -162,9 +150,6 @@ BiocManager::install(
 &lt;p align="center"&gt;
 &lt;img src="images/gene_structure.png" alt="" height="400"/&gt;
 &lt;/p&gt;
-
-- Transcribed form of the DNA
-- Active state of the DNA
 
 ---
 
@@ -237,9 +222,6 @@ A combination of
 
 ... to analyze and interpret the biological data
 
---
-
-Can you mention some applications of these omics datasets?
 
 ---
 
@@ -316,11 +298,11 @@ To get the right answer, you have to pose the right question.
 
 --
 
-- Does the total output of a gene change between conditions? Differential Gene Expression
+- Does the total output of a gene change between conditions? Differential Gene Expression (DGE)
 
 --
 
-- Does the expression of individual transcripts change? Differential Transcript Expression
+- Does the expression of individual transcripts change? Differential Transcript Expression (DTE)
 
 --
 
@@ -328,7 +310,7 @@ To get the right answer, you have to pose the right question.
 
 --
 
-- Does the isoform composition for a given gene change? Differential Transcript Usage/Differential Exon Usage 
+- Does the isoform composition for a given gene change? Differential Transcript Usage/Differential Exon Usage (DTU/DEU)
 
 --
 
@@ -408,13 +390,15 @@ Quality trimming &amp; filtering (wide range of QC tools available)
 
 # Reference files
 
-Reference genome sequences (in `fasta` format), required for the alignment
+Reference genome sequences (in `fasta` format), required for genome alignment.
 
 --
 
-Think of the alignment as the address of each read in a 3-billion houses street, where the elements along the street can also end up repeating themselves
+Think of the alignment as the address of each read in a 3-billion houses street, where the elements along the street can also end up repeating themselves.
 
 --
+
+#### What's out there?
 
 Ensembl: http://www.ensembl.org/info/data/ftp/index.html
 
@@ -456,11 +440,11 @@ Naming of genes can vary across versions, in some databases!
 
 An example:
 
-[`ftp://ftp.ensembl.org/pub/release-99/fasta/homo_sapiens/dna/`](ftp://ftp.ensembl.org/pub/release-99/fasta/homo_sapiens/dna/)
+[`http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/`](http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/)
 
 ... and one level up...
 
-[`ftp://ftp.ensembl.org/pub/release-99/fasta/homo_sapiens/`](ftp://ftp.ensembl.org/pub/release-99/fasta/homo_sapiens/)
+[`http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/`](http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/)
 
 --
 
@@ -491,7 +475,7 @@ chr1    unknown CDS     3427347 3427466 .       -       2       gene_id "MEGF6";
 p_id "P34437"; transcript_id "NM_001409"; tss_id "TSS31177";
 ```
 
-* One line per feature
+* One line per "feature" (exon, transcript, gene, CDS, 3'UTR, 5'UTR, ...)
 * One feature = 9 columns of data, plus optional track definition lines
 * Essential for releasing annotation information
 
@@ -528,12 +512,13 @@ Fields:
 
 --
 
-Currently (September 2020)
+Currently (May 2022)
 
-- 1903 software packages
-- 962 annotation packages
-- 392 experiment packages
-- 27 workflows
+- 2140 software packages
+- 909 annotation packages
+- 410 experiment packages
+- 29 workflows
+- 8 books
 
 **Aim**: interdisciplinary research, collaboration and rapid development of scientific software
 
@@ -558,23 +543,38 @@ Currently (September 2020)
 
 # Data processing
 
+&lt;p align="center"&gt;
+&lt;img src="images/raw_to_proc.jpg" alt="A nice example of going from raw data to some form of processed data - fastq-to-bam" height="500"/&gt;
+&lt;/p&gt;
+
+---
+
+# Data processing
+
 Turning millions of text lines into properly structured abundance tables
 
 --
 
 Our aim: we often want to compare abundance (expression) of genes or other features between conditions
 
-Genome vs transcriptome alignment
+Splice-aware genome alignment vs "direct" transcript mapping and quantification
 
-Splice-aware alignment vs "direct" transcript quantification
 
 ---
 
-# The role of annotation
+# Alignment: not just simple mapping
 
 &lt;p align="center"&gt;
-&lt;img src="images/genemodel_gviz.png" alt="" height="500"/&gt;
+&lt;img src="images/rnaseq_alignment.png" alt="" height="300"/&gt;
 &lt;/p&gt;
+
+--
+
+For RNA-seq data, we need a splice-aware aligner
+
+Common choices:
+- STAR
+- HISAT2
 
 ---
 
@@ -609,27 +609,6 @@ Entries:
     
 ---
 
-# Alignment: not just simple mapping
-
-&lt;p align="center"&gt;
-&lt;img src="images/rnaseq_alignment.png" alt="" height="300"/&gt;
-&lt;/p&gt;
-
---
-
-- Need reliable gene models
-- No detection of novel genes
-
---
-
-Need a splice-aware aligner
-
-Common choices:
-- STAR
-- HISAT2
-
----
-
 # Before quantification
 
 ... and actually, always: Do visualize your data!
@@ -655,6 +634,14 @@ Gene-level counts, often obtained by  genome alignment + overlap counting
 
 &lt;p align="center"&gt;
 &lt;img src="images/ss_igv.png" alt="" height="400"/&gt;
+&lt;/p&gt;
+
+---
+
+# The role of annotation
+
+&lt;p align="center"&gt;
+&lt;img src="images/genemodel_gviz.png" alt="" height="500"/&gt;
 &lt;/p&gt;
 
 ---
@@ -686,8 +673,8 @@ Some recently developed methods:
 
 return...
 
-* Transcript-level counts, often obtained by  “alignment-free” estimation methods  
-* Gene-level counts, obtained by summation of transcript-level counts
+* Transcript-level counts and TPM (transcripts-per-million) estimates, which can be summed up to get  
+* Gene-level counts and TPM estimates
 
 --
 
@@ -695,7 +682,7 @@ Pros &amp; cons
 
 - considerably faster than traditional alignment+counting -&gt; allow bootstrapping
 - more highly resolved estimates (transcripts rather than gene) + can be aggregated
-- can use a larger fraction of the reads
+- can use a slightly larger fraction of the reads since multi-mapping reads are not excluded
 - don't return precise alignments (bam files, for e.g. visualization in genome browser)
 
 ---
@@ -704,21 +691,21 @@ Pros &amp; cons
 
 --
 
-On the gene level: combine exons, "ignoring" splice variants
+Based on genome alignment - mainly gene-level quantification: combine exons, "ignoring" splice variants
     
 - Simple, powerful, yet in some cases inaccurate
 - Tools:
   - `htseq-count`, `featureCounts` for estimating expression levels (counts)
-  - `DESeq`, `edgeR`, `DESeq2` for statistical modeling
+  - `edgeR`, `DESeq2`, `voom+limma` for statistical modeling
   
 --
 
-On the transcript level: assign ambiguous reads based on unique ones
+Based on transcriptome mapping - transcript- and gene-level quantification: 'assign' reads (or rather, estimate most likely expression level) based on probabilistic modeling
     
-- Potentially cleaner, but high degree of uncertainty!
+- Potentially cleaner, but high degree of uncertainty on the transcript level!
 - Tools: 
-  - `Cufflinks`, `bitSeq`, `RSEM`, `salmon`, `kallisto` for (pseudo)alignment
-  - `DESeq2`, `DRIMseq`, `DEXSeq`, `sleuth` for modeling
+  - `bitSeq`, `RSEM`, `salmon`, `kallisto` for (pseudo)alignment/quantification
+  - `DESeq2`, `edgeR`, `voom+limma`, `swish`, `DRIMseq`, `DEXSeq`, `sleuth` for modeling (depending on the question of interest)
   
 ---
 
@@ -785,6 +772,8 @@ featureCounts(files = bamfiles,
               strandSpecific = 0)
 ```
 
+Directly generates a count matrix in your R session.
+
 ---
 
 # What it would look like - salmon
@@ -795,8 +784,12 @@ Create an index of the transcriptome
 
 ```
 $ salmon index -i my_transcripts.idx \          
-               -t my_transcripts.fasta
+               -t &lt;(cat my_transcripts.fasta my_genome.fasta) \
+               -d chromosome_names.txt
 ```
+
+The genome acts as a 'decoy' sequence, to collect reads truly arising from 
+intronic or intergenic locations. 
 
 ---
 
@@ -830,18 +823,18 @@ $ salmon quant -i my_transcripts.idx -l A \
 ... due to time constraints
 
 &lt;p align="center"&gt;
-&lt;img src="images/ss_salmon_quant.png" alt="" height="200"/&gt;
+&lt;img src="images/ss_salmon_quant.png" alt="" height="400"/&gt;
 &lt;/p&gt;
 
 ---
 
-# What it would look like - salmon
+# Importing salmon quantifications into R
 
 You can follow (offline) the instructions of the `tximport` package - https://bioconductor.org/packages/tximport/
 
 --
 
-`tximeta`: another precious assistant on the way to be consistent and to keep track of provenance identification
+`tximeta`: another precious assistant on the way to be consistent and to keep track of provenance identification (we'll see it in action during the exercises)
 
 ---
 
@@ -882,13 +875,24 @@ Poisson -&gt; negative binomial, better captures variability across biological r
 
 Fold changes, relative abundances
 
+.pull-left[
+&lt;img src="images/ratios_ss.png" alt="" height = 250/&gt;
+]
+
+.pull-right[
 Ex: ratio between two Poisson distributed variables
 
 Low: mean = 20 vs mean = 10  
 High: mean = 2000 vs mean = 1000
+]
 
+--
 
+Which one would you trust more? Why?
 
+--
+
+This goes back to having appropriate statistical frameworks that nicely model your datasets (and how these get generated)
 ---
 
 ## Some challenges in RNA-seq data analysis - 2
@@ -993,34 +997,6 @@ Do not test AND filter on logFC post-hoc!
 
 **Think** of the null you're testing against - `\(\beta = 0\)` by default, useful to adapt if you want to focus on larger effect sizes
 
-
-
-
-
-
-
-
-
----
-
-# "Why do we not just take the ratios?"
-
-Fold changes, relative abundances
-
-Ex: ratio between two Poisson distributed variables
-
-Low: mean = 20 vs mean = 10  
-High: mean = 2000 vs mean = 1000
-
-In both cases, the "fold change" is...
-
---
-
-Which one would you trust more? Why?
-
---
-
-This goes back to having appropriate statistical frameworks that nicely model your datasets (and how these get generated)
 
 ---
 
@@ -1206,6 +1182,13 @@ Diminishing returns in increasing the read depth - go for replicates given a fix
 
 ---
 
+# I am not kidding you
+
+--
+
+&lt;blockquote class="twitter-tweet"&gt;&lt;p lang="en" dir="ltr"&gt;doing bulk sequencing analysis in 2022 &lt;a href="https://t.co/3rcOfjZI01"&gt;pic.twitter.com/3rcOfjZI01&lt;/a&gt;&lt;/p&gt;&amp;mdash; Zack Chiang (@z_chiang) &lt;a href="https://twitter.com/z_chiang/status/1531689090956918784?ref_src=twsrc%5Etfw"&gt;May 31, 2022&lt;/a&gt;&lt;/blockquote&gt; &lt;script async src="https://platform.twitter.com/widgets.js" charset="utf-8"&gt;&lt;/script&gt; 
+---
+
 # Practical tips for your (next) RNA-seq dataset
 
 ### Bulk or single cell?
@@ -1273,25 +1256,6 @@ after constructing and running a differential gene expression analysis...
 - a basic understanding of R
 - familiarity with gene expression data (RNA-seq)
 - familiarity with the concept of differential expression analysis
-
----
-
-# Setup for practical sessions
-
-Got R/RStudio?
-
-Latest versions highly recommended!
-
-
-```r
-install.packages("BiocManager")
-BiocManager::install(
-  c("pcaExplorer", "ideal", "GeneTonic"), dependencies = TRUE)
-```
-
---
-
-### This is where we stopped this morning...
 
 ---
 
@@ -1490,19 +1454,8 @@ deTable_detected &lt;- matrix(
 fisher.test(deTable_detected, alternative = "greater")
 ```
 
-```
-## 
-## 	Fisher's Exact Test for Count Data
-## 
-## data:  deTable_detected
-## p-value = 0.2572
-## alternative hypothesis: true odds ratio is greater than 1
-## 95 percent confidence interval:
-##  0.6565614       Inf
-## sample estimates:
-## odds ratio 
-##   1.349365
-```
+versus...
+
 
 ```r
 deTable_allgenes &lt;- matrix(
@@ -1511,20 +1464,6 @@ deTable_allgenes &lt;- matrix(
   dimnames = list(c("DE", "Not_DE"),
                   c("In_gene_set", "Not_in_gene_set")))
 fisher.test(deTable_allgenes, alternative = "greater")
-```
-
-```
-## 
-## 	Fisher's Exact Test for Count Data
-## 
-## data:  deTable_allgenes
-## p-value = 0.002527
-## alternative hypothesis: true odds ratio is greater than 1
-## 95 percent confidence interval:
-##  1.750891      Inf
-## sample estimates:
-## odds ratio 
-##   3.597824
 ```
 
 
@@ -1536,7 +1475,7 @@ class: center
 
 --
 
-✅ Efficient methods to process your data (entire workflows available, see e.g. [`https://osca.bioconductor.org/`](https://osca.bioconductor.org/))
+✅ Efficient methods to process your data (entire workflows available, see e.g. [the Bioconductor workflow packages](https://www.bioconductor.org/packages/release/BiocViews.html#___Workflow))
 
 --
 
@@ -1571,7 +1510,7 @@ class: bottom, center
 ---
 
 
-background-image: url("tablestablestables/Slide1.png")
+background-image: url("images/Slide1.png")
 background-size: contain
 background-position: 50% 50%
 class: bottom, center
@@ -1580,7 +1519,7 @@ class: bottom, center
 
 ---
 
-background-image: url("tablestablestables/Slide2.png")
+background-image: url("images/Slide2.png")
 background-size: contain
 background-position: 50% 50%
 class: bottom, center
@@ -1589,7 +1528,7 @@ class: bottom, center
 
 ---
 
-background-image: url("tablestablestables/Slide3.png")
+background-image: url("images/Slide3.png")
 background-size: contain
 background-position: 50% 50%
 class: bottom, center
@@ -1598,7 +1537,7 @@ class: bottom, center
 
 ---
 
-background-image: url("tablestablestables/Slide4.png")
+background-image: url("images/Slide4.png")
 background-size: contain
 background-position: 50% 50%
 class: bottom, center
@@ -1607,7 +1546,7 @@ class: bottom, center
 
 ---
 
-background-image: url("tablestablestables/Slide5.png")
+background-image: url("images/Slide5.png")
 background-size: contain
 background-position: 50% 50%
 class: bottom, center
@@ -1623,30 +1562,12 @@ class: bottom, center
 
 ---
 
-background-image: url("images/marie.png")
-background-size: cover
-background-position: 50% 50%
-class: center, bottom, inverse
-
-# Does the exploration of your data spark joy?
-
----
-
-background-image: url("images/marie.png")
-background-size: cover
-background-position: 50% 50%
-class: center, bottom, inverse
-
-# Does the ~~exploration~~ interpretation of your data spark joy?
-
----
-
 class: center
 
 # A cocktail recipe
 
 &lt;p align="center"&gt;
-&lt;img src="logocreation/logocreation_Slide1.png" alt="" height = 450/&gt;
+&lt;img src="images/logocreation_Slide1.png" alt="" height = 450/&gt;
 &lt;/p&gt;
 
 .small[*You might (and should) have a set of standardized objects for your datasets and results (Excel does __not__ count)*]
@@ -1658,7 +1579,7 @@ class: center
 # A cocktail recipe
 
 &lt;p align="center"&gt;
-&lt;img src="logocreation/logocreation_Slide2.png" alt="" height = 450/&gt;
+&lt;img src="images/logocreation_Slide2.png" alt="" height = 450/&gt;
 &lt;/p&gt;
 
 *A container for the expression matrix,* `dds`
@@ -1670,7 +1591,7 @@ class: center
 # A cocktail recipe
 
 &lt;p align="center"&gt;
-&lt;img src="logocreation/logocreation_Slide3.png" alt="" height = 450/&gt;
+&lt;img src="images/logocreation_Slide3.png" alt="" height = 450/&gt;
 &lt;/p&gt;
 
 *A container for the results of differential expression,* `res_de`
@@ -1682,7 +1603,7 @@ class: center
 # A cocktail recipe
 
 &lt;p align="center"&gt;
-&lt;img src="logocreation/logocreation_Slide4.png" alt="" height = 450/&gt;
+&lt;img src="images/logocreation_Slide4.png" alt="" height = 450/&gt;
 &lt;/p&gt;
 
 *A table for the result of functional enrichment,* `res_enrich`
@@ -1694,7 +1615,7 @@ class: center
 # A cocktail recipe
 
 &lt;p align="center"&gt;
-&lt;img src="logocreation/logocreation_Slide5.png" alt="" height = 450/&gt;
+&lt;img src="images/logocreation_Slide5.png" alt="" height = 450/&gt;
 &lt;/p&gt;
 
 *Decorate with an annotation table,* `anno_df`
@@ -1706,7 +1627,7 @@ class: center
 # A cocktail recipe
 
 &lt;p align="center"&gt;
-&lt;img src="logocreation/logocreation_Slide6.png" alt="" height = 450/&gt;
+&lt;img src="images/logocreation_Slide6.png" alt="" height = 450/&gt;
 &lt;/p&gt;
 
 *Shaken, not stirred...*
@@ -1718,7 +1639,7 @@ class: center
 # A cocktail recipe
 
 &lt;p align="center"&gt;
-&lt;img src="logocreation/logocreation_Slide7.png" alt="" height = 450/&gt;
+&lt;img src="images/logocreation_Slide7.png" alt="" height = 450/&gt;
 &lt;/p&gt;
 
 `GeneTonic` is now [on Bioconductor](https://bioconductor.org/packages/GeneTonic/)!
@@ -1874,188 +1795,6 @@ background-position: 90% 10%
 
 ---
 
-background-image: url("images/marie.png")
-background-size: cover
-background-position: 50% 50%
-class: center, bottom, inverse
-
---
-
-# Does the analysis/exploration/interpretation of your data spark joy?
-
----
-
-
-# Lessons learnt for me (so far)
-
---
-
-**It takes two to tango**
-
---
-
-Results &amp; Interpretation
-
-&lt;!-- The data is **large** ("can't fit in our head") --&gt;
-&lt;!-- - use structures/containers that support alternative (out-of-memory) representations --&gt;
-&lt;!-- Our task is **complex** --&gt;
-&lt;!-- - yet we are curious and stubborn enough that we want to try and understand this --&gt;
-
---
-
-Bioinformatician &amp; Experimental scientist
-
-&lt;!-- The Pro &amp; the Con: **We are not alone**, we work with a variety of experts  --&gt;
-&lt;!-- - mind (and bridge) the gap when **communicating**! --&gt;
-
---
-
-Reproducibility &amp; Interactivity
-
---
-
-### My contributions to the Bioconductor project:
-
-`pcaExplorer` - Exploratory Data Analysis 
-
-`ideal` - Differential Expression analysis 
-
-`GeneTonic` - Interpretation of DE results 
-
-`iSEE` - Exploration of single cell datasets 
-
----
-
-class: center, middle
-
-# Practical session
-
----
-
-# Practical session
-
-I'll code with you!
-
-See `RNAseq-live-code.R` in Dropbox folder: [`https://bit.ly/mscbiomedicine2022rnaseq`](https://bit.ly/mscbiomedicine2022rnaseq)
-
----
-
-# Practical session
-
-~~I'll code with you!~~ I would really love to code with you...
-
-~~See `RNAseq-live-code.R` in Dropbox folder: [`https://bit.ly/mscbiomedicine2022rnaseq`](https://bit.ly/mscbiomedicine2022rnaseq)~~
-
---
-
-~~I code live in an R script locally. I save often.&lt;br&gt;
-This file lives in a directory synced to Dropbox.&lt;br&gt;
-You open the Dropbox file and refresh as needed, in case you got stuck and want to catch up.~~
-
---
-
-~~You can pair up with a neighbour - alternate roles in typing/dictating  
-Quick homework after the break: what is the `airway` dataset about?  
-Pubmed entry: 24926665, Himes et al. - or google on top of this!~~
-
---
-
-### Nope
-
-See the `transcriptomics101_practical_2022.html` file in [`https://bit.ly/mscbiomedicine2022rnaseq`](https://bit.ly/mscbiomedicine2022rnaseq)
-
----
-
-# Working with the `airway` dataset
-
-The `airway` dataset:
-
-- airway smooth muscle cells were treated with dexamethasone, a synthetic glucocorticoid steroid with anti-inflammatory effects (Himes et al. 2014)
-- four primary human airway smooth muscle cell lines were treated with 1 micromolar dexamethasone for 18 hours. For each of the four cell lines, we have a treated and an untreated sample. 
-
-See more: 
-PMID 24926665  
-raw data: GEO GSE52778 - let's browse this together!  
-the `airway` Bioconductor package  
-
-
-&lt;!-- # Performing a full DE analysis --&gt;
-
-&lt;!-- ### Let's get some data --&gt;
-
-&lt;!-- `macrophage` --&gt;
-
-&lt;!-- Some brief intro, following the `usecase_ideal.html` file --&gt;
-
-&lt;!-- + live demo (using the tour!) --&gt;
-
-&lt;!-- You can have the data from this link: --&gt;
-
-&lt;!-- [`http://bit.ly/EKFKdata`](http://bit.ly/EKFKdata) --&gt;
-
-
----
-
-# Running the examples with the packages
-
-
-```r
-library("pcaExplorer")
-pcaExplorer()
-# and then, in the app, load the example airway dataset
-```
-
-
-```r
-library("ideal")
-ideal()
-# and then, in the app, load the example airway dataset
-```
-
-
-```r
-library("GeneTonic")
-example("GeneTonic", ask = FALSE)
-# this loads the macrophage dataset
-# see the GeneTonic vignette for more details on it
-```
-
-
----
-
-### References:
-
-- Marini and Binder (2016) - Development of Applications for Interactive and Reproducible Research: a Case Study (Genomics Computational Biology) [`10.18547/gcb.2017.vol3.iss1.e39`](https://doi.org/10.18547/gcb.2017.vol3.iss1.e39) 
-- Marini and Binder (2019) - pcaExplorer: an R/Bioconductor package for interacting with RNA-seq principal components (BMC Bioinformatics) [`10.1186/s12859-019-2879-1`](https://doi.org/10.1186/s12859-019-2879-1) 
-- Marini, Linke, Binder (2020) - ideal: an R/Bioconductor package for Interactive Differential Expression Analysis (BMC Bioinformatics) [`10.1186/s12859-020-03819-5`](https://doi.org/10.1186/s12859-020-03819-5)
-- Rue-Albrecht, Marini, Soneson, Lun (2018) - iSEE: Interactive SummarizedExperiment Explorer (F1000 Research) [`https://doi.org/10.12688/f1000research.14966.1`](https://doi.org/10.12688/f1000research.14966.1)
-- Marini, Ludt, Linke, Strauch (2021) - GeneTonic: an R/Bioconductor package for streamlining the interpretation of RNA-seq data (BMC Bioinformatics) [`https://doi.org/10.1186/s12859-021-04461-5`](https://doi.org/10.1186/s12859-021-04461-5)
-
----
-
-### References: (cont'd)
-
-- Amezquita, Lun, Becht, Carey, Carpp, Geistlinger, Marini, Rue-Albrecht, Risso, Soneson, Waldron, Pagès, Smith, Huber, Morgan, Gottardo &amp; Hicks (2019) - Orchestrating single-cell analysis with Bioconductor (Nature Methods) [`https://doi.org/10.1038/s41592-019-0654-x`](https://doi.org/10.1038/s41592-019-0654-x)
-- Companion online book: [`https://osca.bioconductor.org/`](https://osca.bioconductor.org/)
-
-### Resources
-
-See the `transcriptomics101_practical_2022.html` for a fully worked out example (in the Dropbox folder).
-
-The whole `rnaseqGene` workflow is detailed here: https://www.bioconductor.org/packages/rnaseqGene/
-
----
-
-class: middle, center
-
-## ... thank you for your attention!
-&lt;code&gt;✉️ marinif@uni-mainz.de - &lt;svg viewBox="0 0 512 512" style="height:1em;position:relative;display:inline-block;top:.1em;" xmlns="http://www.w3.org/2000/svg"&gt;  &lt;path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/code&gt; [`@FedeBioinfo`](https://twitter.com/FedeBioinfo)
-
-
----
-
----
-
 # Interfaces for RNA-seq
 
 &lt;p align="center"&gt;
@@ -2091,7 +1830,6 @@ class: center, bottom, inverse
 
 ---
 
-
 # Lessons learnt for me (so far)
 
 --
@@ -2124,72 +1862,36 @@ _Stop using Excel for performing Bioinformatics data analysis :)_
 
 --
 
-### My contributions to the Bioconductor project:
+**Our contributions to the Bioconductor project:**
 
+.pull-left[
 `pcaExplorer` - Exploratory Data Analysis 
 
 `ideal` - Differential Expression analysis 
 
 `GeneTonic` - Interpretation of DE results 
 
-`iSEE` - Exploration of single cell datasets 
+`iSEE` - Exploration of single cell datasets
+
+...
+]
+.pull-right[
+`countsimQC` - comparing count data sets
+
+`iCOBRA` - calculation and visualization of performance metrics
+
+`ExploreModelMatrix`
+
+`tximeta` - tx importing with metadata, *for free*
+
+`alevinQC`
+]
 
 ---
 
-&lt;!-- class: center, middle --&gt;
+class: center, middle
 
-&lt;!-- # Practical session --&gt;
-
-&lt;!-- -- --&gt;
-
-&lt;!-- I'll code with you!  --&gt;
-
-&lt;!-- See `RNAseq-live-code.R` in Dropbox folder: [`http://bit.ly/mscbiomedicine2020`](http://bit.ly/mscbiomedicine2020) --&gt;
-
-&lt;!-- -- --&gt;
-
-&lt;!-- I code live in an R script locally. I save often.&lt;br&gt; --&gt;
-&lt;!-- This file lives in a directory synced to Dropbox.&lt;br&gt; --&gt;
-&lt;!-- You open the Dropbox file and refresh as needed, in case you got stuck and want to catch up. --&gt;
-
-&lt;!-- -- --&gt;
-
-&lt;!-- You can pair up with a neighbour - alternate roles in typing/dictating --&gt;
-
-&lt;!-- Quick homework after the break: what is the `airway` dataset about? --&gt;
-
-&lt;!-- Pubmed entry: 24926665, Himes et al. - or google on top of this! --&gt;
-
-&lt;!-- --- --&gt;
-
-# Working with the `airway` dataset
-
-The `airway` dataset:
-
-- airway smooth muscle cells were treated with dexamethasone, a synthetic glucocorticoid steroid with anti-inflammatory effects (Himes et al. 2014)
-- four primary human airway smooth muscle cell lines were treated with 1 micromolar dexamethasone for 18 hours. For each of the four cell lines, we have a treated and an untreated sample. 
-
-See more: 
-- PMID 24926665
-- raw data: GEO GSE52778 - let's browse this together!
-- the `airway` Bioconductor package
-
-
-&lt;!-- # Performing a full DE analysis --&gt;
-
-&lt;!-- ### Let's get some data --&gt;
-
-&lt;!-- `macrophage` --&gt;
-
-&lt;!-- Some brief intro, following the `usecase_ideal.html` file --&gt;
-
-&lt;!-- + live demo (using the tour!) --&gt;
-
-&lt;!-- You can have the data from this link: --&gt;
-
-&lt;!-- [`http://bit.ly/EKFKdata`](http://bit.ly/EKFKdata) --&gt;
-
-
+# Practical session
 
 ---
 
@@ -2199,14 +1901,21 @@ class: middle
 
 - Marini and Binder (2016) - Development of Applications for Interactive and Reproducible Research: a Case Study (Genomics Computational Biology) [`10.18547/gcb.2017.vol3.iss1.e39`](https://doi.org/10.18547/gcb.2017.vol3.iss1.e39) 
 - Marini and Binder (2019) - pcaExplorer: an R/Bioconductor package for interacting with RNA-seq principal components (BMC Bioinformatics) [`10.1186/s12859-019-2879-1`](https://doi.org/10.1186/s12859-019-2879-1) 
-- Marini, Linke, Binder (2020) - ideal: an R/Bioconductor package for Interactive Differential Expression Analysis (bioRxiv) [`10.1101/2020.01.10.901652`](https://doi.org/10.1101/2020.01.10.901652)
+- Marini, Linke, Binder (2020) - ideal: an R/Bioconductor package for Interactive Differential Expression Analysis (BMC Bioinformatics) [`10.1186/s12859-020-03819-5`](https://doi.org/10.1186/s12859-020-03819-5)
 - Rue-Albrecht, Marini, Soneson, Lun (2018) - iSEE: Interactive SummarizedExperiment Explorer (F1000 Research) [`https://doi.org/10.12688/f1000research.14966.1`](https://doi.org/10.12688/f1000research.14966.1)
-- Amezquita, Lun, Becht, Carey, Carpp, Geistlinger, Marini, Rue-Albrecht, Risso, Soneson, Waldron, Pagès, Smith, Huber, Morgan, Gottardo &amp; Hicks (2019) - Orchestrating single-cell analysis with Bioconductor (Nature Methods) [`https://doi.org/10.1038/s41592-019-0654-x`](https://doi.org/10.1038/s41592-019-0654-x)
-- Companion online book: [`https://osca.bioconductor.org/`](https://osca.bioconductor.org/)
+- Marini, Ludt, Linke, Strauch (2021) - GeneTonic: an R/Bioconductor package for streamlining the interpretation of RNA-seq data (BMC Bioinformatics) [`https://doi.org/10.1186/s12859-021-04461-5`](https://doi.org/10.1186/s12859-021-04461-5)
+- Ludt, Ustjanzew, Binder, Strauch, Marini (2022) - Interactive and Reproducible Workflows for Exploring and Modeling RNA-seq Data with pcaExplorer, Ideal, and GeneTonic (Current Protocols) [`https://doi.org/10.1002/cpz1.411`](https://doi.org/10.1002/cpz1.411)
+
+---
+
+### References: (cont'd)
+
+- Srivastava, Malik, Sarkar, Zakeri, Almodaresi, Soneson, Love, Kingsford, Patro (2020) - Alignment and mapping methodology influence transcript abundance estimation (Genome Biology) [https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02151-8](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02151-8)
+- Conesa, Madrigal, Tarazona, Gomez-Cabrero, Cervera, McPherson, Szcześniak, Gaffney, Elo, Zhang, Mortazavi (2016) - A survey of best practices for RNA-seq data analysis (Genome Biology) [`https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0881-8`](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0881-8)
 
 ### Resources
 
-https://www.bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html
+The whole `rnaseqGene` workflow is detailed here: https://www.bioconductor.org/packages/rnaseqGene/
 
 ---
 
@@ -2214,6 +1923,7 @@ class: middle, center
 
 ## ... thank you for your attention!
 &lt;code&gt;marinif@uni-mainz.de - &lt;svg viewBox="0 0 512 512" style="height:1em;position:relative;display:inline-block;top:.1em;" xmlns="http://www.w3.org/2000/svg"&gt;  &lt;path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/code&gt; [`@FedeBioinfo`](https://twitter.com/FedeBioinfo)
+&lt;code&gt;charlotte.soneson@fmi.ch - &lt;svg viewBox="0 0 512 512" style="height:1em;position:relative;display:inline-block;top:.1em;" xmlns="http://www.w3.org/2000/svg"&gt;  &lt;path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/code&gt; [`@CSoneson`](https://twitter.com/CSoneson)
 
 
 ---
